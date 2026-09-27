@@ -8,7 +8,7 @@ fi
 
 VARIANT="$1"
 SEED="$2"
-GPU_ID="${3:-0}"
+GPU_ID="${3:-4}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 

@@ -57,13 +57,13 @@ conda run -n py310 env PYTHONPATH="$PWD/src" \
 先按方案跑 A/seed42：
 
 ```bash
-bash scripts/run_one.sh A 42 1
+bash scripts/run_one.sh A 42 4
 ```
 
-确认基础复现后运行其他组。批量脚本默认只使用 GPU 0 且只启动一个任务；共享机器上应显式指定空闲 GPU，例如：
+确认基础复现后运行其他组。批量脚本默认优先使用物理 GPU 4、5、6、7，每张卡只运行一个本实验任务；空闲显存低于 40000 MiB 时会等待。可按需覆盖 GPU 列表、并发数或显存阈值：
 
 ```bash
-GPU_IDS="1 4" MAX_JOBS=2 bash scripts/run_all.sh
+GPU_IDS="4 5 6 7" MAX_JOBS=4 MIN_FREE_MIB=40000 bash scripts/run_all.sh
 ```
 
 单次训练会在 `runs/<variant>_seed<seed>/` 保存：
