@@ -27,6 +27,8 @@ A/B/C/D 使用同一固定患者划分、同一官方 all-pairs 主任务、相�
 
 数据、模型权重、checkpoint 和 `runs/` 均不会提交到 Git。
 
+正式实验在线读取原始 3D MRI。为避免四组并发时主机共享内存和预取队列膨胀，所有组统一使用 `pair_batch_size=4`、`val_batch_size=4`、`num_workers=1`、`prefetch_factor=1` 且关闭 `pin_memory`。这只调整资源占用，不改变 A/B/C/D 的数据划分、损失或模型定义；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。配置中的 batch size 因而有意不同于官方单任务设置的 16，并在全部对比组中保持一致。
+
 ## 验证与运行
 
 所有命令从仓库根目录执行。首次克隆本实验仓库后，独立准备官方源码（目录已被 `.gitignore` 忽略）：

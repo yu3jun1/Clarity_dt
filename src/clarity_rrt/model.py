@@ -53,6 +53,14 @@ class ClarityDynamicsEnsemble(nn.Module):
             raise ValueError("ensemble_size must be at least one")
         self.base = official_model
         self.ensemble_size = int(ensemble_size)
+        text_model = getattr(official_model.shared_text_encoder, "model", None)
+        if text_model is not None:
+            # PEFT exposes its own wrapper config while Transformers checks the
+            # nested backbone configs during gradient-checkpointed forwards.
+            for module in text_model.modules():
+                text_config = getattr(module, "config", None)
+                if text_config is not None and hasattr(text_config, "use_cache"):
+                    text_config.use_cache = False
         extras = []
         for member_index in range(1, ensemble_size):
             with torch.random.fork_rng(devices=[]):

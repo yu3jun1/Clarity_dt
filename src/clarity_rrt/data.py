@@ -281,8 +281,6 @@ class FixedSplitPairDataset:
         return len(self._chain_by_base_index)
 
     def collate_fn(self, max_chains: int = 4):
-        torch = __import__("torch")
-
         def collate(samples: list[dict[str, Any]]) -> dict[str, Any]:
             all_specs = [sample.pop("chain_spec", None) for sample in samples]
             specs = sorted(
@@ -290,41 +288,57 @@ class FixedSplitPairDataset:
                 key=lambda spec: spec.key,
             )[:max_chains]
             batch = self.base.collate_fn(samples)
-            groups: list[dict[str, Any]] = []
-            by_horizon: dict[int, list[ChainSpec]] = {}
-            for spec in specs:
-                by_horizon.setdefault(spec.horizon, []).append(spec)
-            for horizon in sorted(by_horizon):
-                horizon_specs = by_horizon[horizon]
-                mri = torch.stack(
-                    [
-                        torch.stack([self.base.mri_loader.load(mri_id) for mri_id in spec.mri_ids])
-                        for spec in horizon_specs
-                    ]
-                )
-                groups.append(
-                    {
-                        "horizon": horizon,
-                        "keys": [spec.key for spec in horizon_specs],
-                        "mri": mri,
-                        "delta": torch.tensor(
-                            [
-                                [right - left for left, right in zip(spec.mri_days, spec.mri_days[1:])]
-                                for spec in horizon_specs
-                            ],
-                            dtype=torch.float32,
-                        ),
-                        "drugs_text_steps": [
-                            [spec.drugs_text[step] for spec in horizon_specs]
-                            for step in range(horizon)
-                        ],
-                        "clinical_text": [spec.clinical_text for spec in horizon_specs],
-                    }
-                )
-            batch["chain_groups"] = groups
+            # Keep collate lightweight. Large chain MRI volumes are materialized
+            # only by the trainer when RRT is active (epoch >= start_epoch).
+            batch["chain_specs"] = specs
             return batch
 
         return collate
+
+    def materialize_chain_groups(
+        self, specs: Sequence[ChainSpec]
+    ) -> list[dict[str, Any]]:
+        """Load selected chain MRI volumes lazily in the training process."""
+        torch = __import__("torch")
+        groups: list[dict[str, Any]] = []
+        by_horizon: dict[int, list[ChainSpec]] = {}
+        for spec in specs:
+            by_horizon.setdefault(spec.horizon, []).append(spec)
+        for horizon in sorted(by_horizon):
+            horizon_specs = by_horizon[horizon]
+            mri = torch.stack(
+                [
+                    torch.stack(
+                        [self.base.mri_loader.load(mri_id) for mri_id in spec.mri_ids]
+                    )
+                    for spec in horizon_specs
+                ]
+            )
+            groups.append(
+                {
+                    "horizon": horizon,
+                    "keys": [spec.key for spec in horizon_specs],
+                    "mri": mri,
+                    "delta": torch.tensor(
+                        [
+                            [
+                                right - left
+                                for left, right in zip(
+                                    spec.mri_days, spec.mri_days[1:]
+                                )
+                            ]
+                            for spec in horizon_specs
+                        ],
+                        dtype=torch.float32,
+                    ),
+                    "drugs_text_steps": [
+                        [spec.drugs_text[step] for spec in horizon_specs]
+                        for step in range(horizon)
+                    ],
+                    "clinical_text": [spec.clinical_text for spec in horizon_specs],
+                }
+            )
+        return groups
 
 
 def _build_parser() -> argparse.ArgumentParser:

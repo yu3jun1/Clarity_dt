@@ -117,11 +117,14 @@ def build_loaders(config: Mapping[str, Any], seed: int):
         np.random.seed(worker_seed)
 
     max_chains = int(config["rrt"]["max_chains_per_pair_batch"])
+    num_workers = int(training["num_workers"])
     common = {
-        "num_workers": int(training["num_workers"]),
-        "pin_memory": torch.cuda.is_available(),
+        "num_workers": num_workers,
+        "pin_memory": bool(training.get("pin_memory", False)),
         "worker_init_fn": init_worker,
     }
+    if num_workers > 0:
+        common["prefetch_factor"] = int(training.get("prefetch_factor", 1))
     loaders = {
         "train": DataLoader(
             datasets["train"],
@@ -389,7 +392,8 @@ class ExperimentTrainer:
         )
         context = torch.enable_grad() if training_mode else torch.no_grad()
         with context:
-            for batch in loader:
+            epoch_started = time.perf_counter()
+            for batch_index, batch in enumerate(loader, start=1):
                 survival_time = batch["survival_time"].to(self.device, non_blocking=True)
                 event = batch["event_indicator"].to(self.device, non_blocking=True)
                 time_delta = batch["time_delta"].to(self.device, non_blocking=True)
@@ -409,9 +413,12 @@ class ExperimentTrainer:
                 rrt_loss = pre_latent.new_zeros(())
                 chain_count = 0
                 if rrt_enabled:
+                    chain_groups = loader.dataset.materialize_chain_groups(
+                        batch["chain_specs"]
+                    )
                     rrt_loss, chain_count = recursive_latent_loss(
                         self.model,
-                        batch["chain_groups"],
+                        chain_groups,
                         self.device,
                         int(self.config["rrt"]["supervise_from_step"]),
                     )
@@ -437,6 +444,25 @@ class ExperimentTrainer:
                 risks.append(outputs["member_risk"].mean(dim=0).detach().cpu())
                 times.append(survival_time.detach().cpu())
                 events.append(event.detach().cpu())
+                log_interval = int(
+                    self.config["training"].get("log_interval_batches", 10)
+                )
+                if batch_index == 1 or batch_index % log_interval == 0:
+                    print(
+                        json.dumps(
+                            {
+                                "epoch": epoch,
+                                "phase": "train" if training_mode else "validation",
+                                "batch": batch_index,
+                                "batches": len(loader),
+                                "loss": float(total.detach()),
+                                "rrt_chains": chain_count,
+                                "elapsed_seconds": time.perf_counter() - epoch_started,
+                            },
+                            sort_keys=True,
+                        ),
+                        flush=True,
+                    )
         risk_array = torch.cat(risks).numpy()
         time_array = torch.cat(times).numpy()
         event_array = torch.cat(events).numpy()
