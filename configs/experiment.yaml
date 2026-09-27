@@ -6,6 +6,7 @@ run_root: runs
 data:
   timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
   mri_data_dir: /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post
+  mri_cache_dir: /dev/shm/clarity_mri_cache
   features_csv: null
   split_file: data/splits.json
   split_seed: 20260927

@@ -27,7 +27,7 @@ A/B/C/D 使用同一固定患者划分、同一官方 all-pairs 主任务、相�
 
 数据、模型权重、checkpoint 和 `runs/` 均不会提交到 Git。
 
-正式实验在线读取原始 3D MRI。所有组统一使用官方 batch size 16、`num_workers=2`、`prefetch_factor=1` 且关闭 `pin_memory`；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。该配置在八路并发数据加载与真实模型前向/反向压力测试通过后启用，并在全部对比组中保持一致。
+正式实验在线训练 BrainIAC，但从共享的原始 float32 MRI 缓存 `/dev/shm/clarity_mri_cache` 读取输入。缓存内容与 NIfTI 经官方加载器得到的张量逐元素一致，不缓存会随训练更新的 BrainIAC latent。所有组统一使用官方 batch size 16、`num_workers=2`、`prefetch_factor=1` 且关闭 `pin_memory`；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。
 
 ## 验证与运行
 
@@ -66,6 +66,13 @@ bash scripts/run_one.sh A 42 4
 
 ```bash
 GPU_IDS="0 1 2 3 4 5 6 7" MAX_JOBS=8 MIN_FREE_MIB=40000 bash scripts/run_all.sh
+```
+
+`run_all.sh` 会先顺序构建或验证专属缓存，再启动 GPU worker。只有全部训练、评价和汇总成功完成后，它才删除 `/dev/shm/clarity_mri_cache`。失败或人工中止时缓存会保留以便复用；清理命令带有固定路径白名单和 manifest 校验，绝不会清理整个 `/dev/shm`。如需单独训练或重评，先运行：
+
+```bash
+conda run --no-capture-output -n py310 env PYTHONPATH="$PWD/src" \
+  python -m clarity_rrt.mri_cache build --config configs/experiment.yaml
 ```
 
 单次训练会在 `runs/<variant>_seed<seed>/` 保存：

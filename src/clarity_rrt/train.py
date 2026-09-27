@@ -98,6 +98,15 @@ def build_datasets(config: Mapping[str, Any]):
     )
     base = upstream_dataset(data_config, include_between=False)
     split = load_split(config["data"]["split_file"])
+    cache_dir = config["data"].get("mri_cache_dir")
+    if cache_dir:
+        from .mri_cache import CachedMRIVolumeLoader
+
+        base.mri_loader = CachedMRIVolumeLoader(
+            cache_dir,
+            expected_source_dir=config["data"]["mri_data_dir"],
+            expected_split_sha256=split["split_sha256"],
+        )
     horizons = config["rrt"]["horizons"]
     datasets = {
         name: FixedSplitPairDataset(base, split["splits"][split_name], horizons=horizons)

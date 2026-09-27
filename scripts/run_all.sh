@@ -10,6 +10,7 @@ read -r -a GPU_LIST <<< "${GPU_IDS:-0 1 2 3 4 5 6 7}"
 GPU_COUNT="${#GPU_LIST[@]}"
 WORKER_COUNT="${MAX_JOBS:-$GPU_COUNT}"
 MIN_FREE_MIB="${MIN_FREE_MIB:-40000}"
+CACHE_DIR="/dev/shm/clarity_mri_cache"
 if (( WORKER_COUNT > GPU_COUNT )); then
   WORKER_COUNT="$GPU_COUNT"
 fi
@@ -17,6 +18,14 @@ if (( WORKER_COUNT < 1 )); then
   echo "MAX_JOBS must be at least one" >&2
   exit 2
 fi
+
+export PYTHONPATH="$REPO_ROOT/src"
+echo "[cache] building or validating exact raw MRI cache at $CACHE_DIR"
+conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" \
+  python -m clarity_rrt.mri_cache build \
+  --config configs/experiment.yaml \
+  --cache-dir "$CACHE_DIR" \
+  --verify-samples 8
 
 TASKS=()
 for variant in A B C D; do
@@ -70,6 +79,11 @@ if (( status != 0 )); then
   exit "$status"
 fi
 
-export PYTHONPATH="$REPO_ROOT/src"
 conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate aggregate \
   --config configs/experiment.yaml
+
+# Cleanup is intentionally reached only after every training/evaluation worker
+# and the aggregate step succeed. The Python command refuses any target other
+# than this exact dedicated directory and validates its manifest before removal.
+conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" \
+  python -m clarity_rrt.mri_cache cleanup --cache-dir "$CACHE_DIR"
