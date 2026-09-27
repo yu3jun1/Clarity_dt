@@ -27,7 +27,7 @@ A/B/C/D 使用同一固定患者划分、同一官方 all-pairs 主任务、相�
 
 数据、模型权重、checkpoint 和 `runs/` 均不会提交到 Git。
 
-正式实验在线读取原始 3D MRI。为避免四组并发时主机共享内存和预取队列膨胀，所有组统一使用 `pair_batch_size=4`、`val_batch_size=4`、`num_workers=1`、`prefetch_factor=1` 且关闭 `pin_memory`。这只调整资源占用，不改变 A/B/C/D 的数据划分、损失或模型定义；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。配置中的 batch size 因而有意不同于官方单任务设置的 16，并在全部对比组中保持一致。
+正式实验在线读取原始 3D MRI。所有组统一使用官方 batch size 16、`num_workers=2`、`prefetch_factor=1` 且关闭 `pin_memory`；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。该配置在八路并发数据加载与真实模型前向/反向压力测试通过后启用，并在全部对比组中保持一致。
 
 ## 验证与运行
 
@@ -62,10 +62,10 @@ conda run -n py310 env PYTHONPATH="$PWD/src" \
 bash scripts/run_one.sh A 42 4
 ```
 
-确认基础复现后运行其他组。批量脚本默认优先使用物理 GPU 4、5、6、7，每张卡只运行一个本实验任务；空闲显存低于 40000 MiB 时会等待。可按需覆盖 GPU 列表、并发数或显存阈值：
+确认基础复现后运行其他组。批量脚本默认允许使用物理 GPU 0–7，每张卡只运行一个本实验任务；空闲显存低于 40000 MiB 时会等待。可按需覆盖 GPU 列表、并发数或显存阈值：
 
 ```bash
-GPU_IDS="4 5 6 7" MAX_JOBS=4 MIN_FREE_MIB=40000 bash scripts/run_all.sh
+GPU_IDS="0 1 2 3 4 5 6 7" MAX_JOBS=8 MIN_FREE_MIB=40000 bash scripts/run_all.sh
 ```
 
 单次训练会在 `runs/<variant>_seed<seed>/` 保存：

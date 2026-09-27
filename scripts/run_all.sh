@@ -4,9 +4,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-# Prefer the high-memory GPU pool requested for this experiment. Override with
-# GPU_IDS="..." only when deliberately changing the allocation.
-read -r -a GPU_LIST <<< "${GPU_IDS:-4 5 6 7}"
+# Use every local GPU by default. Override with GPU_IDS="..." when deliberately
+# restricting the allocation.
+read -r -a GPU_LIST <<< "${GPU_IDS:-0 1 2 3 4 5 6 7}"
 GPU_COUNT="${#GPU_LIST[@]}"
 WORKER_COUNT="${MAX_JOBS:-$GPU_COUNT}"
 MIN_FREE_MIB="${MIN_FREE_MIB:-40000}"

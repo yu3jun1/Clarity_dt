@@ -39,9 +39,9 @@ rrt:
 
 training:
   epochs: 100
-  pair_batch_size: 4
-  val_batch_size: 4
-  num_workers: 1
+  pair_batch_size: 16
+  val_batch_size: 16
+  num_workers: 2
   prefetch_factor: 1
   pin_memory: false
   log_interval_batches: 10
