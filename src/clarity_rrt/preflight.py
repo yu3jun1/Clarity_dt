@@ -29,6 +29,13 @@ def run_preflight(config_path: str | Path) -> dict[str, Any]:
     except (OSError, subprocess.CalledProcessError) as error:
         commit = str(error)
     check("upstream_commit", commit == config["upstream_commit"], commit)
+    try:
+        dirty = subprocess.check_output(
+            ["git", "-C", str(upstream), "status", "--porcelain"], text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError) as error:
+        dirty = str(error)
+    check("upstream_clean", dirty == "", dirty or "clean")
     for label, path in (
         ("timeline_json", config["data"]["timeline_json"]),
         ("mri_data_dir", config["data"]["mri_data_dir"]),

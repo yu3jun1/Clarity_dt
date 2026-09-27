@@ -6,6 +6,9 @@ __pycache__/
 .idea/
 .vscode/
 
+# External upstream source (managed independently)
+/third_party/CLARITY/
+
 # Experiment outputs and model/data artifacts
 runs/
 experiments/

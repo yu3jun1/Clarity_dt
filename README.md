@@ -1,6 +1,6 @@
 # CLARITY + RRT + Dynamics Ensemble
 
-这是基于官方 [DingTianxingjian/CLARITY](https://github.com/DingTianxingjian/CLARITY) 的可复现对比实验仓库。官方代码以 Git submodule 固定在提交 `dadb82241a24f5ec5e4e4dc994e3116fd4a9da04`；新增代码不修改子模块。
+这是基于官方 [DingTianxingjian/CLARITY](https://github.com/DingTianxingjian/CLARITY) 的可复现对比实验仓库。本仓库只管理新增实验代码、配置、固定 split、测试和运行脚本；CLARITY 源码作为本地外部依赖，不使用 Git submodule，也不纳入本仓库当前追踪。实验要求外部源码固定在提交 `dadb82241a24f5ec5e4e4dc994e3116fd4a9da04` 且工作树干净。
 
 实验严格包含四组：
 
@@ -29,7 +29,14 @@ A/B/C/D 使用同一固定患者划分、同一官方 all-pairs 主任务、相�
 
 ## 验证与运行
 
-所有命令从仓库根目录执行。
+所有命令从仓库根目录执行。首次克隆本实验仓库后，独立准备官方源码（目录已被 `.gitignore` 忽略）：
+
+```bash
+git clone https://github.com/DingTianxingjian/CLARITY.git third_party/CLARITY
+git -C third_party/CLARITY checkout dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
+```
+
+然后执行：
 
 ```bash
 # 单元测试
