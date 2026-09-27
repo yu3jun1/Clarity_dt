@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+.idea/
+.vscode/
+
+# Experiment outputs and model/data artifacts
+runs/
+experiments/
+*.ckpt
+*.pth
+*.pt
+*.nii
+*.nii.gz
+
+# Local environments and secrets
+.env
+.venv/
+venv/
