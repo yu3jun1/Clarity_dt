@@ -22,5 +22,5 @@ done
 wait
 
 export PYTHONPATH="$REPO_ROOT/src"
-conda run -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate aggregate \
+conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate aggregate \
   --config configs/experiment.yaml

@@ -16,14 +16,14 @@ mkdir -p "runs/${VARIANT}_seed${SEED}"
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 export PYTHONPATH="$REPO_ROOT/src"
 
-conda run -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.train \
+conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.train \
   --config configs/experiment.yaml \
   --variant "$VARIANT" \
   --seed "$SEED" \
   --device cuda:0 \
   2>&1 | tee "runs/${VARIANT}_seed${SEED}/train.log"
 
-conda run -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate run \
+conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate run \
   --config configs/experiment.yaml \
   --variant "$VARIANT" \
   --seed "$SEED" \
