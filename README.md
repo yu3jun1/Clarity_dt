@@ -70,6 +70,14 @@ GPU_IDS="0 1 2 3 4 5 6 7" MAX_JOBS=8 MIN_FREE_MIB=40000 bash scripts/run_all.sh
 
 `run_all.sh` 会先顺序构建或验证专属缓存，再启动 GPU worker。只有全部训练、评价和汇总成功完成后，它才删除 `/dev/shm/clarity_mri_cache`。失败或人工中止时缓存会保留以便复用；清理命令带有固定路径白名单和 manifest 校验，绝不会清理整个 `/dev/shm`。如需单独训练或重评，先运行：
 
+需要在成功完成后继续保留专属缓存时，设置 `KEEP_MRI_CACHE=1`。批量恢复时，已有 `metrics.json` 的实验会直接跳过；已有完整 100 epoch history 及 `best.pt`/`last.pt` 的实验只重新评价，不会重新训练：
+
+```bash
+KEEP_MRI_CACHE=1 GPU_IDS="0 1 2 3 4 5 6 7" bash scripts/run_all.sh
+```
+
+如需单独构建或验证缓存，运行：
+
 ```bash
 conda run --no-capture-output -n py310 env PYTHONPATH="$PWD/src" \
   python -m clarity_rrt.mri_cache build --config configs/experiment.yaml

@@ -25,12 +25,19 @@ mkdir -p "$RUN_DIR"
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 export PYTHONPATH="$REPO_ROOT/src"
 
-conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.train \
-  --config configs/experiment.yaml \
-  --variant "$VARIANT" \
-  --seed "$SEED" \
-  --device cuda:0 \
-  2>&1 | tee "${RUN_DIR}/train.log"
+EXPECTED_EPOCHS="$(sed -n 's/^[[:space:]]*epochs:[[:space:]]*//p' configs/experiment.yaml | head -n 1)"
+LAST_EPOCH=""
+if [[ -s "${RUN_DIR}/history.csv" ]]; then
+  LAST_EPOCH="$(awk -F, 'NR > 1 { epoch=$1 } END { print epoch }' "${RUN_DIR}/history.csv")"
+fi
+
+if [[ -n "$EXPECTED_EPOCHS" && "$LAST_EPOCH" == "$EXPECTED_EPOCHS" && -f "${RUN_DIR}/best.pt" && -f "${RUN_DIR}/last.pt" ]]; then
+  echo "[scheduler] ${RUN_NAME} training is complete at epoch ${LAST_EPOCH}; evaluating existing checkpoint"
+else
+  conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.train \
+    --config configs/experiment.yaml --variant "$VARIANT" --seed "$SEED" --device cuda:0 \
+    2>&1 | tee "${RUN_DIR}/train.log"
+fi
 
 conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m clarity_rrt.evaluate run \
   --config configs/experiment.yaml \

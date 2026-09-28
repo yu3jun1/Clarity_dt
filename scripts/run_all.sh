@@ -83,7 +83,12 @@ conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" python -m
   --config configs/experiment.yaml
 
 # Cleanup is intentionally reached only after every training/evaluation worker
-# and the aggregate step succeed. The Python command refuses any target other
-# than this exact dedicated directory and validates its manifest before removal.
-conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" \
-  python -m clarity_rrt.mri_cache cleanup --cache-dir "$CACHE_DIR"
+# and the aggregate step succeed. KEEP_MRI_CACHE=1 preserves the dedicated cache
+# for follow-up runs. The Python command refuses any target other than this exact
+# directory and validates its manifest before removal.
+if [[ "${KEEP_MRI_CACHE:-0}" == "1" ]]; then
+  echo "[cache] preserving $CACHE_DIR because KEEP_MRI_CACHE=1"
+else
+  conda run --no-capture-output -n py310 env PYTHONPATH="$REPO_ROOT/src" \
+    python -m clarity_rrt.mri_cache cleanup --cache-dir "$CACHE_DIR"
+fi
