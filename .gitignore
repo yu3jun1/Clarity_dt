@@ -10,10 +10,12 @@ __pycache__/
 /third_party/CLARITY/
 
 # Experiment outputs and model/data artifacts
-runs/
+# runs/
 experiments/
 *.ckpt
 *.pth
+*.csv
+runs/.locks
 *.pt
 *.nii
 *.nii.gz

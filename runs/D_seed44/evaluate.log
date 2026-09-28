@@ -1,0 +1,65 @@
+WARNING: overwriting environment variables set in the machine
+overwriting variable ['PYTHONPATH']
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<04:00,  3.67it/s]Loading weights:   0%|          | 4/883 [00:00<01:09, 12.68it/s]Loading weights:   3%|▎         | 26/883 [00:00<00:10, 80.31it/s]Loading weights:   5%|▌         | 46/883 [00:00<00:07, 117.77it/s]Loading weights:   8%|▊         | 69/883 [00:00<00:05, 149.23it/s]Loading weights:  11%|█         | 94/883 [00:00<00:04, 176.34it/s]Loading weights:  13%|█▎        | 114/883 [00:00<00:04, 178.07it/s]Loading weights:  15%|█▌        | 134/883 [00:01<00:04, 167.56it/s]Loading weights:  17%|█▋        | 154/883 [00:01<00:04, 155.05it/s]Loading weights:  20%|█▉        | 174/883 [00:01<00:04, 163.57it/s]Loading weights:  23%|██▎       | 199/883 [00:01<00:03, 181.96it/s]Loading weights:  25%|██▌       | 224/883 [00:01<00:03, 195.38it/s]Loading weights:  28%|██▊       | 245/883 [00:01<00:03, 191.49it/s]Loading weights:  30%|███       | 265/883 [00:01<00:03, 188.68it/s]Loading weights:  33%|███▎      | 289/883 [00:01<00:03, 197.21it/s]Loading weights:  35%|███▍      | 309/883 [00:01<00:02, 197.12it/s]Loading weights:  37%|███▋      | 329/883 [00:02<00:02, 195.70it/s]Loading weights:  40%|███▉      | 353/883 [00:02<00:02, 208.06it/s]Loading weights:  42%|████▏     | 374/883 [00:02<00:02, 196.21it/s]Loading weights:  45%|████▍     | 394/883 [00:02<00:04, 108.22it/s]Loading weights:  46%|████▋     | 410/883 [00:03<00:07, 65.35it/s] Loading weights:  48%|████▊     | 422/883 [00:03<00:09, 49.35it/s]Loading weights:  49%|████▉     | 432/883 [00:03<00:08, 50.38it/s]Loading weights:  50%|████▉     | 440/883 [00:04<00:10, 42.75it/s]Loading weights:  52%|█████▏    | 457/883 [00:04<00:07, 58.13it/s]Loading weights:  54%|█████▍    | 476/883 [00:04<00:05, 77.60it/s]Loading weights:  56%|█████▌    | 491/883 [00:04<00:04, 89.76it/s]Loading weights:  58%|█████▊    | 516/883 [00:04<00:03, 121.24it/s]Loading weights:  63%|██████▎   | 554/883 [00:04<00:01, 178.44it/s]Loading weights:  68%|██████▊   | 603/883 [00:04<00:01, 252.20it/s]Loading weights:  74%|███████▍  | 653/883 [00:04<00:00, 314.15it/s]Loading weights:  81%|████████  | 716/883 [00:04<00:00, 396.56it/s]Loading weights:  87%|████████▋ | 764/883 [00:05<00:00, 417.83it/s]Loading weights:  92%|█████████▏| 809/883 [00:05<00:00, 412.47it/s]Loading weights:  98%|█████████▊| 863/883 [00:05<00:00, 438.14it/s]Loading weights: 100%|██████████| 883/883 [00:05<00:00, 164.69it/s]
+trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
+
+Model statistics:
+  Total parameters:     2,629,284,338
+  Trainable parameters: 22,381,442
+  MRI encoder LoRA:     589,824
+{
+  "variant": "D",
+  "seed": 44,
+  "checkpoint": "runs/D_seed44/best.pt",
+  "checkpoint_epoch": 18,
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
+  "resources": {
+    "training_seconds": 27170.252394547686,
+    "peak_gpu_gb": 26.084155904
+  },
+  "direct": {
+    "patients": 20,
+    "samples": 107,
+    "events": 87,
+    "c_index": 0.5585365853658537,
+    "brier365": 0.3708836179330861,
+    "brier_na_reason": null
+  },
+  "recursive": {
+    "H1": {
+      "patients": 20,
+      "samples": 20,
+      "events": 14,
+      "c_index": 0.6016260162601627,
+      "brier365": 0.37245700786129776,
+      "brier_na_reason": null
+    },
+    "H2": {
+      "patients": 14,
+      "samples": 14,
+      "events": 10,
+      "c_index": 0.6415094339622641,
+      "brier365": 0.34852978913708454,
+      "brier_na_reason": null
+    },
+    "H3": {
+      "patients": 8,
+      "samples": 8,
+      "events": 6,
+      "c_index": 0.5333333333333333,
+      "brier365": 0.22550274828740052,
+      "brier_na_reason": null
+    }
+  },
+  "uncertainty_h2": {
+    "total_patients": 14,
+    "retained": 11,
+    "actual_coverage": 0.7857142857142857,
+    "retained_events": 8,
+    "low_uncertainty_brier365": 0.3941573915038903,
+    "low_uncertainty_brier_na_reason": null,
+    "random_same_size_brier365_mean": 0.32528839888087524,
+    "random_repeats_completed": 20
+  }
+}

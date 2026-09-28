@@ -1,0 +1,55 @@
+WARNING: overwriting environment variables set in the machine
+overwriting variable ['PYTHONPATH']
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:03<44:26,  3.02s/it]Loading weights:   0%|          | 3/883 [00:03<12:57,  1.13it/s]Loading weights:   1%|          | 5/883 [00:03<07:01,  2.08it/s]Loading weights:   2%|▏         | 16/883 [00:03<01:33,  9.25it/s]Loading weights:   2%|▏         | 19/883 [00:03<01:27,  9.89it/s]Loading weights:   3%|▎         | 29/883 [00:04<00:48, 17.48it/s]Loading weights:   4%|▎         | 33/883 [00:04<00:48, 17.63it/s]Loading weights:   5%|▍         | 42/883 [00:04<00:33, 24.74it/s]Loading weights:   5%|▌         | 46/883 [00:04<00:36, 22.72it/s]Loading weights:   6%|▌         | 55/883 [00:04<00:28, 29.11it/s]Loading weights:   7%|▋         | 59/883 [00:05<00:32, 25.26it/s]Loading weights:   8%|▊         | 68/883 [00:05<00:26, 30.97it/s]Loading weights:   8%|▊         | 72/883 [00:05<00:30, 26.74it/s]Loading weights:   9%|▉         | 81/883 [00:05<00:24, 32.51it/s]Loading weights:  10%|▉         | 85/883 [00:05<00:29, 27.34it/s]Loading weights:  11%|█         | 94/883 [00:06<00:23, 33.12it/s]Loading weights:  11%|█         | 98/883 [00:06<00:28, 27.74it/s]Loading weights:  12%|█▏        | 107/883 [00:06<00:23, 33.44it/s]Loading weights:  13%|█▎        | 111/883 [00:06<00:27, 28.14it/s]Loading weights:  14%|█▎        | 120/883 [00:07<00:24, 30.92it/s]Loading weights:  14%|█▍        | 124/883 [00:07<00:27, 27.93it/s]Loading weights:  15%|█▌        | 133/883 [00:07<00:22, 33.85it/s]Loading weights:  16%|█▌        | 137/883 [00:07<00:25, 29.15it/s]Loading weights:  17%|█▋        | 146/883 [00:07<00:20, 36.07it/s]Loading weights:  17%|█▋        | 150/883 [00:08<00:24, 30.25it/s]Loading weights:  18%|█▊        | 159/883 [00:08<00:19, 36.67it/s]Loading weights:  18%|█▊        | 163/883 [00:08<00:23, 31.09it/s]Loading weights:  19%|█▉        | 172/883 [00:08<00:20, 34.80it/s]Loading weights:  20%|█▉        | 176/883 [00:08<00:24, 29.11it/s]Loading weights:  21%|██        | 185/883 [00:09<00:20, 33.58it/s]Loading weights:  21%|██▏       | 189/883 [00:09<00:24, 28.65it/s]Loading weights:  22%|██▏       | 198/883 [00:09<00:19, 34.70it/s]Loading weights:  23%|██▎       | 202/883 [00:09<00:23, 28.98it/s]Loading weights:  24%|██▍       | 211/883 [00:09<00:19, 34.67it/s]Loading weights:  24%|██▍       | 215/883 [00:10<00:23, 27.89it/s]Loading weights:  25%|██▌       | 224/883 [00:10<00:19, 34.03it/s]Loading weights:  26%|██▌       | 228/883 [00:10<00:22, 28.57it/s]Loading weights:  27%|██▋       | 237/883 [00:10<00:18, 34.08it/s]Loading weights:  27%|██▋       | 241/883 [00:10<00:22, 28.53it/s]Loading weights:  28%|██▊       | 250/883 [00:11<00:18, 34.34it/s]Loading weights:  29%|██▉       | 254/883 [00:11<00:24, 25.67it/s]Loading weights:  30%|██▉       | 263/883 [00:11<00:19, 31.21it/s]Loading weights:  30%|███       | 267/883 [00:11<00:21, 28.01it/s]Loading weights:  31%|███▏      | 276/883 [00:11<00:17, 34.47it/s]Loading weights:  32%|███▏      | 280/883 [00:12<00:20, 29.25it/s]Loading weights:  33%|███▎      | 289/883 [00:12<00:16, 35.66it/s]Loading weights:  33%|███▎      | 293/883 [00:12<00:19, 29.97it/s]Loading weights:  34%|███▍      | 302/883 [00:12<00:16, 36.31it/s]Loading weights:  35%|███▍      | 306/883 [00:12<00:19, 30.30it/s]Loading weights:  36%|███▌      | 315/883 [00:13<00:16, 35.41it/s]Loading weights:  36%|███▌      | 319/883 [00:13<00:18, 30.09it/s]Loading weights:  37%|███▋      | 328/883 [00:13<00:15, 35.84it/s]Loading weights:  38%|███▊      | 332/883 [00:13<00:18, 29.85it/s]Loading weights:  39%|███▊      | 341/883 [00:13<00:15, 35.63it/s]Loading weights:  39%|███▉      | 345/883 [00:14<00:18, 29.65it/s]Loading weights:  40%|████      | 354/883 [00:14<00:15, 35.21it/s]Loading weights:  41%|████      | 358/883 [00:14<00:17, 30.14it/s]Loading weights:  42%|████▏     | 367/883 [00:14<00:14, 35.32it/s]Loading weights:  42%|████▏     | 371/883 [00:14<00:17, 30.11it/s]Loading weights:  43%|████▎     | 380/883 [00:15<00:13, 36.38it/s]Loading weights:  43%|████▎     | 384/883 [00:15<00:16, 30.74it/s]Loading weights:  45%|████▍     | 393/883 [00:15<00:13, 36.99it/s]Loading weights:  45%|████▍     | 397/883 [00:15<00:15, 30.77it/s]Loading weights:  46%|████▌     | 406/883 [00:15<00:13, 36.41it/s]Loading weights:  46%|████▋     | 410/883 [00:16<00:16, 28.46it/s]Loading weights:  47%|████▋     | 419/883 [00:16<00:13, 33.79it/s]Loading weights:  48%|████▊     | 423/883 [00:16<00:16, 28.43it/s]Loading weights:  49%|████▉     | 432/883 [00:16<00:13, 34.26it/s]Loading weights:  49%|████▉     | 436/883 [00:17<00:16, 27.64it/s]Loading weights:  52%|█████▏    | 455/883 [00:17<00:08, 53.19it/s]Loading weights:  55%|█████▍    | 482/883 [00:17<00:04, 91.25it/s]Loading weights:  57%|█████▋    | 503/883 [00:17<00:03, 112.32it/s]Loading weights:  60%|█████▉    | 528/883 [00:17<00:02, 142.44it/s]Loading weights:  63%|██████▎   | 553/883 [00:17<00:02, 163.45it/s]Loading weights:  65%|██████▌   | 577/883 [00:17<00:01, 182.30it/s]Loading weights:  68%|██████▊   | 601/883 [00:17<00:01, 190.96it/s]Loading weights:  70%|███████   | 622/883 [00:17<00:01, 166.19it/s]Loading weights:  73%|███████▎  | 647/883 [00:18<00:01, 184.32it/s]Loading weights:  76%|███████▋  | 675/883 [00:18<00:01, 207.94it/s]Loading weights:  79%|███████▉  | 701/883 [00:18<00:00, 219.76it/s]Loading weights:  83%|████████▎ | 729/883 [00:18<00:00, 232.23it/s]Loading weights:  86%|████████▌ | 759/883 [00:18<00:00, 248.62it/s]Loading weights:  89%|████████▉ | 785/883 [00:18<00:00, 246.80it/s]Loading weights:  92%|█████████▏| 811/883 [00:18<00:00, 245.48it/s]Loading weights:  95%|█████████▌| 841/883 [00:18<00:00, 247.76it/s]Loading weights:  99%|█████████▊| 871/883 [00:18<00:00, 256.28it/s]Loading weights: 100%|██████████| 883/883 [00:18<00:00, 46.56it/s] 
+trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
+
+Model statistics:
+  Total parameters:     2,629,284,338
+  Trainable parameters: 22,381,442
+  MRI encoder LoRA:     589,824
+{
+  "variant": "B",
+  "seed": 44,
+  "checkpoint": "runs/B_seed44/best.pt",
+  "checkpoint_epoch": 70,
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
+  "resources": {
+    "training_seconds": 28465.580441687605,
+    "peak_gpu_gb": 25.548656128
+  },
+  "direct": {
+    "patients": 20,
+    "samples": 107,
+    "events": 87,
+    "c_index": 0.6226829268292683,
+    "brier365": 0.4147412122125597,
+    "brier_na_reason": null
+  },
+  "recursive": {
+    "H1": {
+      "patients": 20,
+      "samples": 20,
+      "events": 14,
+      "c_index": 0.6097560975609756,
+      "brier365": 0.4786497818366701,
+      "brier_na_reason": null
+    },
+    "H2": {
+      "patients": 14,
+      "samples": 14,
+      "events": 10,
+      "c_index": 0.5283018867924528,
+      "brier365": 0.41227579823258237,
+      "brier_na_reason": null
+    },
+    "H3": {
+      "patients": 8,
+      "samples": 8,
+      "events": 6,
+      "c_index": 0.5333333333333333,
+      "brier365": 0.4565243885160814,
+      "brier_na_reason": null
+    }
+  }
+}

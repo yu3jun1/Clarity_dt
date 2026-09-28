@@ -1,0 +1,103 @@
+experiment_name: clarity_rrt_ensemble
+upstream_root: third_party/CLARITY
+upstream_commit: dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
+run_root: runs
+data:
+  timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
+  mri_data_dir: /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post
+  mri_cache_dir: /dev/shm/clarity_mri_cache
+  features_csv: null
+  split_file: data/splits.json
+  split_seed: 20260927
+  split_ratios:
+  - 0.7
+  - 0.15
+  - 0.15
+  take_dims: 767
+model:
+  brainiac_ckpt: /home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt
+  brainiac_tokens: 8
+  brainiac_lora_r: 8
+  brainiac_ema_momentum: 0.0
+  latent_dim: 768
+  num_modalities: 32
+  text_encoder_name: /data/tanyuejun/model/medgemma-4b-it
+  freeze_text_encoder: false
+  dropout: 0.3
+variants:
+  A:
+    ensemble_size: 1
+    rrt_weight: 0.0
+  B:
+    ensemble_size: 1
+    rrt_weight: 0.1
+  C:
+    ensemble_size: 3
+    rrt_weight: 0.0
+  D:
+    ensemble_size: 3
+    rrt_weight: 0.1
+rrt:
+  horizons:
+  - 2
+  - 3
+  max_chains_per_pair_batch: 4
+  start_epoch: 11
+  supervise_from_step: 2
+  loss: l1
+  recursive_survival_loss: false
+training:
+  epochs: 100
+  pair_batch_size: 16
+  val_batch_size: 16
+  num_workers: 2
+  prefetch_factor: 1
+  pin_memory: false
+  log_interval_batches: 10
+  seeds:
+  - 42
+  - 43
+  - 44
+  lr: 0.0002
+  text_lr: 0.0001
+  text_proj_lr: 0.0005
+  vision_lr: 5.0e-05
+  lambda_l1: 0.5
+  lambda_cox: 1.0
+  lambda_bce: 1.0
+  cf_weight: 1.0
+  cf_cos_margin: 0.9
+  contrastive_weight: 0.0
+  variance_weight: 0.0
+  survival_weight_decay: 0.01
+  grad_clip_norm: 2.0
+  warmup_epochs: 10
+evaluation:
+  modes:
+  - direct
+  - recursive
+  recursive_horizons:
+  - 1
+  - 2
+  - 3
+  metrics:
+  - c_index
+  - ipcw_brier365
+  brier_time_days: 365
+  uncertainty_coverages:
+  - 1.0
+  - 0.8
+  uncertainty_random_repeats: 20
+active_variant: B
+active_seed: 42
+split_sha256: 6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e
+dataset_counts:
+  train:
+    pairs: 472
+    chains: 204
+  validation:
+    pairs: 83
+    chains: 33
+  test:
+    pairs: 107
+    chains: 46

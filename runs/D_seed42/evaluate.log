@@ -1,0 +1,65 @@
+WARNING: overwriting environment variables set in the machine
+overwriting variable ['PYTHONPATH']
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:03<51:07,  3.48s/it]Loading weights:   0%|          | 3/883 [00:03<15:01,  1.02s/it]Loading weights:   1%|          | 5/883 [00:04<08:01,  1.83it/s]Loading weights:   2%|▏         | 16/883 [00:04<01:46,  8.14it/s]Loading weights:   2%|▏         | 19/883 [00:04<01:39,  8.68it/s]Loading weights:   3%|▎         | 29/883 [00:04<00:55, 15.46it/s]Loading weights:   4%|▎         | 33/883 [00:04<00:52, 16.16it/s]Loading weights:   5%|▍         | 42/883 [00:05<00:36, 22.77it/s]Loading weights:   5%|▌         | 46/883 [00:05<00:38, 21.61it/s]Loading weights:   6%|▌         | 55/883 [00:05<00:29, 27.77it/s]Loading weights:   7%|▋         | 59/883 [00:05<00:34, 23.80it/s]Loading weights:   8%|▊         | 68/883 [00:05<00:28, 28.30it/s]Loading weights:   8%|▊         | 72/883 [00:06<00:33, 24.48it/s]Loading weights:   9%|▉         | 81/883 [00:06<00:26, 29.78it/s]Loading weights:  10%|▉         | 85/883 [00:06<00:32, 24.36it/s]Loading weights:  11%|█         | 94/883 [00:06<00:27, 29.18it/s]Loading weights:  11%|█         | 98/883 [00:07<00:31, 25.02it/s]Loading weights:  12%|█▏        | 107/883 [00:07<00:25, 30.66it/s]Loading weights:  13%|█▎        | 111/883 [00:07<00:30, 25.71it/s]Loading weights:  14%|█▎        | 120/883 [00:07<00:24, 31.44it/s]Loading weights:  14%|█▍        | 124/883 [00:08<00:27, 27.52it/s]Loading weights:  15%|█▌        | 133/883 [00:08<00:23, 31.48it/s]Loading weights:  16%|█▌        | 137/883 [00:08<00:28, 26.12it/s]Loading weights:  17%|█▋        | 146/883 [00:08<00:22, 32.06it/s]Loading weights:  17%|█▋        | 150/883 [00:08<00:26, 27.35it/s]Loading weights:  18%|█▊        | 159/883 [00:09<00:22, 32.15it/s]Loading weights:  18%|█▊        | 163/883 [00:09<00:27, 26.29it/s]Loading weights:  19%|█▉        | 172/883 [00:09<00:21, 33.14it/s]Loading weights:  20%|█▉        | 176/883 [00:09<00:24, 28.88it/s]Loading weights:  21%|██        | 185/883 [00:09<00:20, 34.03it/s]Loading weights:  21%|██▏       | 189/883 [00:10<00:24, 28.61it/s]Loading weights:  22%|██▏       | 198/883 [00:10<00:19, 34.68it/s]Loading weights:  23%|██▎       | 202/883 [00:10<00:23, 28.77it/s]Loading weights:  24%|██▍       | 211/883 [00:10<00:19, 33.69it/s]Loading weights:  24%|██▍       | 215/883 [00:11<00:24, 27.83it/s]Loading weights:  25%|██▌       | 224/883 [00:11<00:19, 33.78it/s]Loading weights:  26%|██▌       | 228/883 [00:11<00:22, 28.64it/s]Loading weights:  27%|██▋       | 237/883 [00:11<00:19, 33.90it/s]Loading weights:  27%|██▋       | 241/883 [00:11<00:22, 28.77it/s]Loading weights:  28%|██▊       | 250/883 [00:12<00:18, 34.27it/s]Loading weights:  29%|██▉       | 254/883 [00:12<00:22, 28.50it/s]Loading weights:  30%|██▉       | 263/883 [00:12<00:18, 33.83it/s]Loading weights:  30%|███       | 267/883 [00:12<00:29, 20.56it/s]Loading weights:  31%|███       | 273/883 [00:13<00:25, 24.39it/s]Loading weights:  31%|███▏      | 277/883 [00:13<00:27, 21.76it/s]Loading weights:  32%|███▏      | 280/883 [00:13<00:26, 22.69it/s]Loading weights:  33%|███▎      | 289/883 [00:13<00:19, 30.67it/s]Loading weights:  33%|███▎      | 293/883 [00:13<00:23, 25.63it/s]Loading weights:  34%|███▍      | 302/883 [00:14<00:17, 32.52it/s]Loading weights:  35%|███▍      | 306/883 [00:14<00:20, 27.64it/s]Loading weights:  36%|███▌      | 315/883 [00:14<00:16, 33.77it/s]Loading weights:  36%|███▌      | 319/883 [00:14<00:19, 28.64it/s]Loading weights:  37%|███▋      | 328/883 [00:14<00:16, 33.98it/s]Loading weights:  38%|███▊      | 332/883 [00:15<00:19, 28.92it/s]Loading weights:  39%|███▊      | 341/883 [00:15<00:15, 34.51it/s]Loading weights:  39%|███▉      | 345/883 [00:15<00:18, 28.99it/s]Loading weights:  40%|███▉      | 351/883 [00:15<00:15, 33.82it/s]Loading weights:  40%|████      | 355/883 [00:15<00:20, 26.03it/s]Loading weights:  41%|████      | 359/883 [00:15<00:19, 27.14it/s]Loading weights:  42%|████▏     | 367/883 [00:16<00:16, 31.44it/s]Loading weights:  42%|████▏     | 371/883 [00:16<00:19, 26.81it/s]Loading weights:  43%|████▎     | 380/883 [00:16<00:15, 33.40it/s]Loading weights:  43%|████▎     | 384/883 [00:16<00:14, 34.25it/s]Loading weights:  46%|████▌     | 408/883 [00:16<00:06, 74.80it/s]Loading weights:  49%|████▉     | 434/883 [00:16<00:04, 111.42it/s]Loading weights:  52%|█████▏    | 463/883 [00:17<00:02, 151.87it/s]Loading weights:  55%|█████▌    | 489/883 [00:17<00:02, 178.65it/s]Loading weights:  70%|███████   | 619/883 [00:17<00:00, 472.06it/s]Loading weights:  85%|████████▌ | 753/883 [00:17<00:00, 707.49it/s]Loading weights: 100%|██████████| 883/883 [00:17<00:00, 50.69it/s] 
+trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
+
+Model statistics:
+  Total parameters:     2,629,284,338
+  Trainable parameters: 22,381,442
+  MRI encoder LoRA:     589,824
+{
+  "variant": "D",
+  "seed": 42,
+  "checkpoint": "runs/D_seed42/best.pt",
+  "checkpoint_epoch": 16,
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
+  "resources": {
+    "training_seconds": 26206.68364825484,
+    "peak_gpu_gb": 26.08642816
+  },
+  "direct": {
+    "patients": 20,
+    "samples": 107,
+    "events": 87,
+    "c_index": 0.5780487804878048,
+    "brier365": 0.29126149390205563,
+    "brier_na_reason": null
+  },
+  "recursive": {
+    "H1": {
+      "patients": 20,
+      "samples": 20,
+      "events": 14,
+      "c_index": 0.5284552845528455,
+      "brier365": 0.3269718392564357,
+      "brier_na_reason": null
+    },
+    "H2": {
+      "patients": 14,
+      "samples": 14,
+      "events": 10,
+      "c_index": 0.5660377358490566,
+      "brier365": 0.31796684295412775,
+      "brier_na_reason": null
+    },
+    "H3": {
+      "patients": 8,
+      "samples": 8,
+      "events": 6,
+      "c_index": 0.7333333333333333,
+      "brier365": 0.16353125421851622,
+      "brier_na_reason": null
+    }
+  },
+  "uncertainty_h2": {
+    "total_patients": 14,
+    "retained": 11,
+    "actual_coverage": 0.7857142857142857,
+    "retained_events": 7,
+    "low_uncertainty_brier365": 0.23068300953153933,
+    "low_uncertainty_brier_na_reason": null,
+    "random_same_size_brier365_mean": 0.3211043383706071,
+    "random_repeats_completed": 20
+  }
+}
