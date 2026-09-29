@@ -10,7 +10,7 @@ __pycache__/
 /third_party/CLARITY/
 
 # Experiment outputs and model/data artifacts
-/outputs/stagewise_recursive/
+/outputs/stagewise_recursive/ablation/
 experiments/
 *.ckpt
 *.pth
