@@ -1,88 +1,81 @@
-# CLARITY Stage-wise Recursive Experiment
+# CLARITY Pure Stage-wise RRT v3
 
-当前仓库只实现 [CLARITY_RRT_stagewise_recursive_experiment_plan.md](CLARITY_RRT_stagewise_recursive_experiment_plan.md) 定义的实验：比较 CLARITY open-loop dynamics 与 stage-wise recursive transition learning，并分别测试单模型和 dynamics ensemble。
+当前活动实验严格实现 [Clarity_dt_next_experiment_plan_v3.md](Clarity_dt_next_experiment_plan_v3.md)。核心变化是：RRT 不再是 teacher-forced dynamics 旁边的 auxiliary rollout loss，而是 B/D 的主要 dynamics 训练方式。
 
-上一版实验的代码路径已经移除。旧方案和旧配置保存在 docs/legacy/、configs/legacy/，原有 12GB 运行产物原样保存在 outputs/legacy_open_loop_aux/。新版产物只写入 outputs/stagewise_recursive/，不会与旧结果混合。
+旧版配置归档在 [configs/legacy/stagewise_recursive_auxiliary_v2.yaml](configs/legacy/stagewise_recursive_auxiliary_v2.yaml)，旧结果保留在 `outputs/stagewise_recursive/`，活动代码不会读取或覆盖它们。v3 结果只写入 `outputs/pure_rrt_v3/`。
+活动 Python 包位于 `src/clarity_rrt_v3/`；旧 `src/clarity_rrt/` 入口已删除，未保留兼容转发层。
+
 
 ## 实验定义
 
-四组共用官方 MRI encoder、文本 encoder 和 SurvivalModule 架构。Ensemble 只复制 LatentPredictor，组内成员共享 encoder 和 outcome。
+四组使用相同患者划分、可训练 MRI Encoder、Text Encoder、SurvivalModule、优化器、学习率、训练轮数、H3 survival supervision 与 checkpoint 选择规则。Ensemble 只复制 dynamics predictor。
 
-| 组 | Dynamics 训练 | λ_RRT | 成员数 |
-|---|---|---:|---:|
-| A | s0 + 完整治疗轨迹 + 总时间 → s3 | 0 | 1 |
-| B | s0→s1, s1→s2, s2→s3 | 0.1 | 1 |
-| C | 与 A 相同 | 0 | 3 |
-| D | 与 B 相同 | 0.1 | 3 |
+| 组 | Dynamics 主训练方式 | 成员数 |
+|---|---|---:|
+| A | `s0 + full plan + total time -> s3` | 1 |
+| B | `s0 -> ŝ1 -> ŝ2 -> ŝ3`，预测状态直接进入下一步 | 1 |
+| C | 与 A 相同 | 3 |
+| D | 与 B 相同，每个成员独立递归 | 3 |
 
-每个样本是同一患者连续四次实际观察组成的 s0,s1,s2,s3。A/C 训练时只编码 s0 和 s3，不读取中间 latent；B/D 的 transition 基础损失使用真实阶段输入，RRT 项从第二步起使用各成员自己的预测继续 rollout：
+B/D 的 dynamics 主损失为：
 
-    L_A/C = L1(F(s0, full_plan, dt_total), s3)
+    L_RRT = (L1(ŝ1,s1) + L1(ŝ2,s2) + L1(ŝ3,s3)) / 3
 
-    L_B/D = mean_k L1(F(sk, ak, dtk), s{k+1})
-            + λ_RRT * mean_{k=2,3} L1(s_hat_k, s_k)
+训练和部署均使用同一种递归状态传递。活动实现中没有 teacher-forced 主损失、auxiliary rollout loss、`lambda_RRT`、horizon weighting、uncertainty loss、新模块或 H4/H5。
 
-四组均使用同一个官方 outcome 架构和相同的 H3 Cox/BCE 训练目标；没有递归 survival loss、per-horizon head、uncertainty loss 或其他新模块。
+## 评估
 
-测试阶段不评价 direct prediction。所有组统一使用相邻阶段 action 和真实时间间隔，从 s0 递归部署到 H1/H2/H3。输出包括：
+A/B/C/D 全部从 `s0` 递归部署到 H1/H2/H3。
 
-- H1/H2/H3 latent MSE 和 cosine similarity；
-- MSE(H3) - MSE(H1)；
-- H1/H2/H3 C-index 和 IPCW Brier@365；
-- C/D 的成员 latent 方差与 latent MSE 的 Pearson 相关；
-- C/D 在 25%/50%/75%/100% coverage 下的 selective rollout latent MSE。
+- Table 1：H1/H2/H3 latent MSE 与 cosine similarity。
+- Table 2（主 prognosis 结果）：H3 C-index 与 IPCW Brier@365。
+- Error accumulation：`MSE(H3) - MSE(H1)`，仅在 JSON 中作为辅助描述。
+- Representation sanity：observed latent 跨样本方差、相邻真实 latent 的平均 L2、MRI Encoder/LoRA 可训练参数 RMS 更新幅度。
+- C/D secondary analysis：H1/H2/H3 latent disagreement、disagreement-error Pearson 相关、survival probability disagreement；不参与训练或 checkpoint 选择。
+- H1/H2 prognosis 仅放在汇总报告附录。
 
-λ_RRT 消融在 B、D 上分别运行 0, 0.01, 0.05, 0.1，汇总 H3 latent MSE、C-index 和 Brier@365。
+旧 `lambda_RRT` weight ablation 已暂停，没有活动配置或运行脚本。
 
 ## 数据与配置
 
-唯一当前配置是 [configs/stagewise_recursive.yaml](configs/stagewise_recursive.yaml)。它继续使用固定的患者级 train/validation/test split：
+活动配置是 [configs/pure_rrt_v3.yaml](configs/pure_rrt_v3.yaml)。它继续使用固定患者级划分 [data/splits.json](data/splits.json)。
 
-    data/splits.json
+满足四阶段 MRI、严格递增日期及 H1/H2/H3 生存标签的窗口数应为：
 
-在当前数据上，满足四阶段 MRI、严格递增日期及 H1/H2/H3 生存标签要求的窗口数为 train/validation/test = 74/11/16。
+    train / validation / test = 74 / 11 / 16
 
-MRI 体数据直接从 `/dev/shm/clarity_mri_cache` 的 float32 `.npy` 缓存读取，不再在训练时重复解压 NIfTI。
-
-官方 CLARITY 源码仍作为本地外部依赖放在 third_party/CLARITY，固定代码由当前本地 checkout 提供，不复制进本仓库。
+MRI 直接从 `/dev/shm/clarity_mri_cache` 的 float32 `.npy` 缓存读取。
 
 ## 运行
 
-先运行轻量测试：
+轻量测试：
 
     conda run -n py310 env PYTHONPATH="$PWD/src" python -m pytest -q
 
-运行一组主实验（只允许 GPU 4–7）：
+单独运行一组（GPU 只能是 4–7）：
 
-    bash scripts/run_one.sh A 42 4
+    bash scripts/pure_rrt_v3/run_one.sh D 42 4
 
-同时运行 A–D 的 seed 42 并汇总：
+按计划先在 tmux 中只运行 seed 42：
 
-    bash scripts/run_single_seed.sh 42
+    tmux new-session -d -s clarity_pure_rrt_v3 \
+      'bash scripts/pure_rrt_v3/run_seed42.sh'
 
-确认单 seed 结果后，在 tmux 中补充 seed 43/44，再运行消融：
+只有确认 seed 42 的方向合理后，才手动补充 seed 43/44：
 
-    tmux new-session -d -s clarity_stagewise_followup 'bash scripts/run_pipeline.sh'
+    bash scripts/pure_rrt_v3/run_remaining_seeds.sh
 
-在 GPU 4–7 上并行运行指定 seed 的 B/D λ_RRT 消融：
+脚本会在所有已完成 run 上重新生成 `summary.json` 和 `summary.md`。
 
-    bash scripts/run_ablation.sh 42
-
-也可单独评价已有 checkpoint：
-
-    PYTHONPATH="$PWD/src" conda run --no-capture-output -n py310 \
-      python -m clarity_rrt.evaluate run \
-      --config configs/stagewise_recursive.yaml \
-      --variant A --seed 42 --device cuda:0
-
-新版目录结构：
+## 输出隔离
 
     outputs/
-    ├── legacy_open_loop_aux/       # 上一版结果，只归档不再读取
-    └── stagewise_recursive/
+    ├── stagewise_recursive/       # v2 旧结果，只归档
+    └── pure_rrt_v3/               # v3 活动输出
         ├── primary/
-        │   └── A_seed42/
-        ├── ablation/
-        │   └── B_lambda0p01_seed42/
+        │   ├── A_seed42/
+        │   ├── B_seed42/
+        │   ├── C_seed42/
+        │   └── D_seed42/
         ├── summary.json
         └── summary.md

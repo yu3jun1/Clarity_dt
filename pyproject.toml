@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clarity-rrt-ensemble"
-version = "0.2.0"
-description = "CLARITY stage-wise recursive transition and dynamics ensemble experiment"
+version = "0.3.0"
+description = "CLARITY pure stage-wise recursive transition and dynamics ensemble experiment"
 requires-python = ">=3.10,<3.11"
 dependencies = [
   "numpy",

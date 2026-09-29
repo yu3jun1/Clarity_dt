@@ -1,30 +1,39 @@
-from clarity_rrt.evaluate import summarize_runs, uncertainty_metrics
+import pytest
+
+from clarity_rrt_v3.evaluate import summarize_runs, uncertainty_metrics
 
 
-def test_uncertainty_reports_correlation_and_selective_error():
+def test_uncertainty_reports_v3_secondary_metrics():
     rows = []
     for horizon in (1, 2, 3):
         for index in range(4):
             rows.append(
                 {
                     "horizon": horizon,
-                    "uncertainty": float(index),
+                    "latent_disagreement": float(index),
                     "latent_mse": float(index + 1),
+                    "survival_probability_std": float(index) / 10.0,
                 }
             )
-    result = uncertainty_metrics(rows, [0.5, 1.0])
-    assert result["H3"]["variance_error_pearson"] == 1.0
-    assert result["H1"]["selective_rollout"]["0.5"]["latent_mse"] == 1.5
-    assert result["H1"]["selective_rollout"]["1"]["latent_mse"] == 2.5
+    result = uncertainty_metrics(rows)
+    assert result["H3"]["latent_disagreement_error_pearson"] == 1.0
+    assert result["H1"]["latent_disagreement_mean"] == 1.5
+    assert result["H2"]["survival_probability_disagreement_mean"] == pytest.approx(0.15)
 
 
-def test_cross_seed_summary_keeps_uncertainty_metrics():
+def test_cross_seed_summary_keeps_secondary_and_representation_metrics():
     uncertainty = {
         f"H{horizon}": {
-            "variance_error_pearson": 0.5,
-            "selective_rollout": {"0.5": {"retained": 2, "latent_mse": 0.25}},
+            "latent_disagreement_mean": 0.25,
+            "latent_disagreement_error_pearson": 0.5,
+            "survival_probability_disagreement_mean": 0.05,
         }
         for horizon in (1, 2, 3)
+    }
+    representation = {
+        "observed_latent_variance": 0.4,
+        "observed_transition_l2_mean": 0.3,
+        "encoder_trainable_parameter_rms_delta": 0.02,
     }
     recursive = {
         f"H{horizon}": {
@@ -40,9 +49,11 @@ def test_cross_seed_summary_keeps_uncertainty_metrics():
             {
                 "recursive": recursive,
                 "error_accumulation": 0.1,
+                "representation_sanity": representation,
                 "uncertainty": uncertainty,
             }
         ]
     )
-    assert summary["H2_uncertainty_error_pearson"]["mean"] == 0.5
-    assert summary["H3_selective_0.5_latent_mse"]["mean"] == 0.25
+    assert summary["H2_latent_disagreement_error_pearson"]["mean"] == 0.5
+    assert summary["H3_survival_probability_disagreement_mean"]["mean"] == 0.05
+    assert summary["observed_latent_variance"]["mean"] == 0.4

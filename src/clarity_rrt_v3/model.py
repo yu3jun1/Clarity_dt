@@ -1,4 +1,4 @@
-"""CLARITY dynamics members with direct and stage-wise execution paths."""
+"""CLARITY dynamics members with open-loop and recursive execution paths."""
 
 from __future__ import annotations
 
@@ -76,29 +76,6 @@ class StagewiseDynamics(nn.Module):
         return torch.stack(
             [predictor(initial, full_condition, total_delta) for predictor in self.predictors]
         )
-
-    def teacher_forced(
-        self,
-        states: torch.Tensor,
-        step_conditions: torch.Tensor,
-        step_deltas: torch.Tensor,
-    ) -> torch.Tensor:
-        members = []
-        for predictor in self.predictors:
-            members.append(
-                torch.stack(
-                    [
-                        predictor(
-                            states[:, step],
-                            step_conditions[:, step],
-                            step_deltas[:, step],
-                        )
-                        for step in range(3)
-                    ],
-                    dim=1,
-                )
-            )
-        return torch.stack(members)
 
     def rollout(
         self,

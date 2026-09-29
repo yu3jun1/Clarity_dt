@@ -5,7 +5,7 @@ import json
 import numpy as np
 import torch
 
-from clarity_rrt.data import (
+from clarity_rrt_v3.data import (
     CachedMRIVolumeLoader,
     StagewiseTrajectoryDataset,
 )

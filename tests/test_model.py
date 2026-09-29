@@ -3,7 +3,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from clarity_rrt.model import StagewiseDynamics
+from clarity_rrt_v3.model import StagewiseDynamics
+from clarity_rrt_v3.train import mean_horizon_l1
 
 
 class TinyTextEncoder(nn.Module):
@@ -85,13 +86,11 @@ def test_direct_path_uses_only_initial_state_and_full_plan():
     torch.testing.assert_close(model.predictors[0].calls[0], states[:, 0])
 
 
-def test_teacher_forcing_uses_real_stage_inputs():
-    model = StagewiseDynamics(TinyClarity(), ensemble_size=1, seed=42)
-    states, conditions, deltas = inputs()
-    output = model.teacher_forced(states, conditions, deltas)
-    assert output.shape == (1, 2, 3, 5, 3)
-    for step in range(3):
-        torch.testing.assert_close(model.predictors[0].calls[step], states[:, step])
+def test_recursive_loss_weights_all_three_horizons_equally():
+    member_states = torch.zeros(1, 1, 3, 1, 1)
+    targets = torch.tensor([[[[1.0]], [[2.0]], [[6.0]]]])
+    loss = mean_horizon_l1(member_states, targets)
+    torch.testing.assert_close(loss, torch.tensor(3.0))
 
 
 def test_rollout_feeds_each_member_its_own_prediction():

@@ -1,4 +1,4 @@
-"""Train the four stage-wise recursive experiment groups."""
+"""Train open-loop CLARITY and pure recursive RRT experiment groups."""
 
 from __future__ import annotations
 
@@ -183,6 +183,20 @@ def encode_mri_stages(
     return torch.stack([model.mri_encoder(mri[:, stage]) for stage in stages], dim=1)
 
 
+def mean_horizon_l1(
+    member_states: torch.Tensor,
+    targets: torch.Tensor,
+) -> torch.Tensor:
+    losses = [
+        F.l1_loss(
+            member_states[:, :, horizon],
+            targets[:, horizon].unsqueeze(0).expand_as(member_states[:, :, horizon]),
+        )
+        for horizon in range(targets.shape[1])
+    ]
+    return torch.stack(losses).mean()
+
+
 def one_year_bce(
     logits: torch.Tensor,
     survival_time: torch.Tensor,
@@ -221,13 +235,8 @@ def run_directory(
     config: Mapping[str, Any],
     variant: str,
     seed: int,
-    rrt_override: float | None,
 ) -> Path:
-    root = Path(config["output_root"])
-    if rrt_override is None:
-        return root / "primary" / f"{variant}_seed{seed}"
-    weight = f"{rrt_override:g}".replace(".", "p")
-    return root / "ablation" / f"{variant}_lambda{weight}_seed{seed}"
+    return Path(config["output_root"]) / "primary" / f"{variant}_seed{seed}"
 
 
 class Trainer:
@@ -235,7 +244,6 @@ class Trainer:
         self,
         config: Mapping[str, Any],
         variant: str,
-        rrt_weight: float,
         model: StagewiseDynamics,
         loaders: Mapping[str, DataLoader],
         optimizer: AdamW,
@@ -246,7 +254,6 @@ class Trainer:
     ) -> None:
         self.config = config
         self.variant = variant
-        self.rrt_weight = rrt_weight
         self.model = model
         self.loaders = loaders
         self.optimizer = optimizer
@@ -258,8 +265,8 @@ class Trainer:
         self.best_c_index = -float("inf")
 
     @property
-    def stagewise(self) -> bool:
-        return bool(self.config["variants"][self.variant]["stagewise"])
+    def pure_recursive(self) -> bool:
+        return self.config["variants"][self.variant]["training_scheme"] == "pure_recursive"
 
     def step(self, batch: Mapping[str, Any], epoch: int) -> tuple[torch.Tensor, dict[str, float], torch.Tensor]:
         mri = batch["mri"].to(self.device)
@@ -270,22 +277,14 @@ class Trainer:
             [batch["full_text"]], batch["clinical_text"]
         )
 
-        if self.stagewise:
+        if self.pure_recursive:
             states = encode_mri_stages(self.model, mri, (0, 1, 2, 3))
             targets = states[:, 1:].detach()
             step_conditions = self.model.encode_conditions(
                 batch["step_text"], batch["clinical_text"]
             )
-            teacher = self.model.teacher_forced(states, step_conditions, deltas)
             rollout = self.model.rollout(states[:, 0], step_conditions, deltas)
-            base_latent = F.l1_loss(
-                teacher,
-                targets.unsqueeze(0).expand(self.model.ensemble_size, -1, -1, -1, -1),
-            )
-            recursive = F.l1_loss(
-                rollout[:, :, 1:],
-                targets[:, 1:].unsqueeze(0).expand(self.model.ensemble_size, -1, -1, -1, -1),
-            )
+            latent = mean_horizon_l1(rollout, targets)
             terminal = rollout[:, :, -1:]
             initial = states[:, 0]
         else:
@@ -293,11 +292,10 @@ class Trainer:
             initial = endpoints[:, 0]
             target = endpoints[:, 1].detach()
             direct = self.model.direct(initial, full_condition[:, 0], deltas.sum(dim=1))
-            base_latent = F.l1_loss(
+            latent = F.l1_loss(
                 direct,
                 target.unsqueeze(0).expand(self.model.ensemble_size, -1, -1, -1),
             )
-            recursive = base_latent.new_zeros(())
             terminal = direct.unsqueeze(2)
 
         risks, logits = self.model.survival(initial, terminal, full_condition)
@@ -308,7 +306,6 @@ class Trainer:
             terminal_time,
             terminal_event,
         )
-        latent = base_latent + self.rrt_weight * recursive
         training = self.config["training"]
         if epoch <= int(training["warmup_epochs"]):
             total = latent
@@ -320,8 +317,7 @@ class Trainer:
             )
         values = {
             "loss": float(total.detach()),
-            "latent": float(base_latent.detach()),
-            "recursive": float(recursive.detach()),
+            "latent": float(latent.detach()),
             "cox": float(cox.detach()),
             "bce": float(bce.detach()),
         }
@@ -330,7 +326,7 @@ class Trainer:
     def epoch(self, epoch: int, training: bool) -> dict[str, float]:
         self.model.train(training)
         loader = self.loaders["train" if training else "validation"]
-        records = {name: [] for name in ("loss", "latent", "recursive", "cox", "bce")}
+        records = {name: [] for name in ("loss", "latent", "cox", "bce")}
         risks = []
         times = []
         events = []
@@ -399,7 +395,7 @@ class Trainer:
             {
                 "epoch": epoch,
                 "variant": self.variant,
-                "rrt_weight": self.rrt_weight,
+                "training_scheme": self.config["variants"][self.variant]["training_scheme"],
                 "state_dict": state,
             },
             self.run_dir / "best.pt",
@@ -411,19 +407,11 @@ def train_one(
     variant: str,
     seed: int,
     device_name: str,
-    rrt_override: float | None = None,
 ) -> Path:
     config = load_config(config_path)
     seed_everything(seed)
     device = torch.device(device_name)
     variant_config = config["variants"][variant]
-    rrt_weight = (
-        float(variant_config["rrt_weight"])
-        if rrt_override is None
-        else float(rrt_override)
-    )
-    if not variant_config["stagewise"]:
-        rrt_weight = 0.0
     upstream_train, _, _, concordance = configure_upstream(config["upstream_root"])
     clarity = upstream_train.build_model(upstream_args(config, seed), device)
     model = StagewiseDynamics(
@@ -433,12 +421,12 @@ def train_one(
     ).to(device)
     loaders, datasets = build_loaders(config, seed)
     optimizer, scheduler = build_optimizer(config, model)
-    run_dir = run_directory(config, variant, seed, rrt_override)
+    run_dir = run_directory(config, variant, seed)
     run_dir.mkdir(parents=True, exist_ok=True)
     resolved = dict(config)
     resolved["active_variant"] = variant
     resolved["active_seed"] = seed
-    resolved["active_rrt_weight"] = rrt_weight
+    resolved["active_training_scheme"] = variant_config["training_scheme"]
     resolved["trajectory_counts"] = {
         name: len(dataset) for name, dataset in datasets.items()
     }
@@ -448,7 +436,6 @@ def train_one(
     trainer = Trainer(
         config,
         variant,
-        rrt_weight,
         model,
         loaders,
         optimizer,
@@ -463,17 +450,16 @@ def train_one(
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--config", default="configs/stagewise_recursive.yaml")
+    result.add_argument("--config", default="configs/pure_rrt_v3.yaml")
     result.add_argument("--variant", required=True, choices=list("ABCD"))
     result.add_argument("--seed", required=True, type=int)
     result.add_argument("--device", default="cuda:0")
-    result.add_argument("--rrt-weight", type=float)
     return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    train_one(args.config, args.variant, args.seed, args.device, args.rrt_weight)
+    train_one(args.config, args.variant, args.seed, args.device)
     return 0
 
 
