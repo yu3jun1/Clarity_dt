@@ -13,6 +13,9 @@ import torch
 from torch.utils.data import Dataset
 
 
+PRIMARY_SURVIVAL_WINDOW_RULE = "earliest_eligible_four_stage_window_per_patient"
+
+
 def parse_timepoint(value: str) -> int:
     match = re.search(r"(\d+)", str(value))
     return int(match.group(1)) if match else -1
@@ -64,19 +67,106 @@ class Trajectory:
     points: tuple[Mapping[str, Any], ...]
 
 
-def treatment_text(
-    pack: Callable[[dict[str, Any]], str],
-    points: Sequence[Mapping[str, Any]],
-) -> str:
-    item: dict[str, Any] = {
-        "pre_tp": points[0]["tp_id"],
-        "post_tp": points[-1]["tp_id"],
-        "pre_actions": points[0].get("actions", {}),
-        "post_actions": points[-1].get("actions", {}),
+def _action_interval(
+    action: Mapping[str, Any], start_day: int, end_day: int
+) -> tuple[int, int] | None:
+    if "interval_start_day" in action and "interval_end_day" in action:
+        action_start = int(action["interval_start_day"])
+        action_end = int(action["interval_end_day"])
+    elif action.get("day_of_insertion") is not None:
+        action_start = action_end = int(action["day_of_insertion"])
+    elif action.get("start_day") is not None:
+        action_start = int(action["start_day"])
+        action_end = int(action.get("end_day") or end_day)
+    else:
+        return None
+
+    clipped_start = max(action_start, start_day + 1)
+    clipped_end = min(action_end, end_day)
+    if clipped_start > clipped_end:
+        return None
+    return clipped_start, clipped_end
+
+
+def _interval_action(
+    action: Mapping[str, Any], start_day: int, end_day: int
+) -> dict[str, Any] | None:
+    interval = _action_interval(action, start_day, end_day)
+    if interval is None:
+        return None
+
+    clipped_start, clipped_end = interval
+    result = {
+        key: action[key]
+        for key in ("agent", "type", "cycle_length_days")
+        if action.get(key) is not None
     }
-    if len(points) > 2:
-        item["between_actions"] = [point.get("actions", {}) for point in points[1:-1]]
-    return pack(item)
+    result["start_offset_days"] = clipped_start - start_day
+    result["end_offset_days"] = clipped_end - start_day
+
+    course_start = action.get("start_day")
+    course_end = action.get("end_day")
+    course_is_inside = (
+        course_start is not None
+        and course_end is not None
+        and start_day < int(course_start) <= int(course_end) <= end_day
+    )
+    if course_is_inside:
+        for key in ("dose", "num_cycles", "dose_gy", "fractions"):
+            if action.get(key) is not None:
+                result[key] = action[key]
+    return result
+
+
+def interval_actions(
+    start: Mapping[str, Any], end: Mapping[str, Any]
+) -> dict[str, list[dict[str, Any]]]:
+    start_day = int(start["mri_day"])
+    end_day = int(end["mri_day"])
+    actions: dict[str, list[dict[str, Any]]] = {}
+    for category, items in end.get("actions", {}).items():
+        selected = [
+            interval_action
+            for action in items
+            if (interval_action := _interval_action(action, start_day, end_day))
+            is not None
+        ]
+        if selected:
+            actions[category] = selected
+    return actions
+
+
+def treatment_text(points: Sequence[Mapping[str, Any]]) -> str:
+    intervals = [
+        {
+            "start_tp": start["tp_id"],
+            "end_tp": end["tp_id"],
+            "actions": interval_actions(start, end),
+        }
+        for start, end in zip(points, points[1:])
+    ]
+    return json.dumps(
+        {"intervals": intervals}, ensure_ascii=False, separators=(",", ":")
+    )
+
+
+def extract_treatment_category(text: str) -> str:
+    payload = json.loads(text)
+    categories: set[str] = set()
+    for interval in payload["intervals"]:
+        for category, items in interval["actions"].items():
+            if category == "radiation":
+                categories.add("RT")
+            elif category in ("chemotherapy", "additional_1", "additional_2"):
+                for item in items:
+                    agent = str(item.get("agent", "")).lower()
+                    if "temozolomide" in agent:
+                        categories.add("TMZ")
+                    elif "bevacizumab" in agent or "avastin" in agent:
+                        categories.add("BEV")
+                    elif agent:
+                        categories.add("OTHER")
+    return "+".join(sorted(categories)) if categories else "no_treatment"
 
 
 class StagewiseTrajectoryDataset(Dataset):
@@ -86,13 +176,11 @@ class StagewiseTrajectoryDataset(Dataset):
         self,
         patients: Mapping[str, Any],
         mri_loader: Any,
-        pack_treatment: Callable[[dict[str, Any]], str],
         format_clinical: Callable[[dict[str, Any]], str],
         patient_ids: Iterable[str],
     ) -> None:
         self.patients = patients
         self.mri_loader = mri_loader
-        self.pack_treatment = pack_treatment
         self.format_clinical = format_clinical
         selected = set(map(str, patient_ids))
         self.trajectories: list[Trajectory] = []
@@ -113,9 +201,41 @@ class StagewiseTrajectoryDataset(Dataset):
                 if not all(valid_survival(point) for point in points[1:]):
                     continue
                 self.trajectories.append(Trajectory(patient_id, points))
+        self._primary_window_keys = self.primary_window_keys()
 
     def __len__(self) -> int:
         return len(self.trajectories)
+
+    @property
+    def unique_patient_count(self) -> int:
+        return len({trajectory.patient_id for trajectory in self.trajectories})
+
+    def primary_trajectories(self) -> tuple[Trajectory, ...]:
+        first: dict[str, tuple[tuple[float, int], Trajectory]] = {}
+        for trajectory in self.trajectories:
+            start = trajectory.points[0]
+            order = (float(start["mri_day"]), parse_timepoint(start["tp_id"]))
+            current = first.get(trajectory.patient_id)
+            if current is None or order < current[0]:
+                first[trajectory.patient_id] = (order, trajectory)
+        return tuple(first[patient_id][1] for patient_id in sorted(first))
+
+    def primary_window_keys(self) -> set[tuple[str, str, str]]:
+        return {
+            (
+                trajectory.patient_id,
+                trajectory.points[0]["tp_id"],
+                trajectory.points[-1]["tp_id"],
+            )
+            for trajectory in self.primary_trajectories()
+        }
+
+    def cohort_counts(self) -> dict[str, int]:
+        return {
+            "trajectory_count": len(self.trajectories),
+            "unique_patient_count": self.unique_patient_count,
+            "primary_survival_window_count": len(self.primary_trajectories()),
+        }
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         trajectory = self.trajectories[index]
@@ -124,13 +244,13 @@ class StagewiseTrajectoryDataset(Dataset):
         days = torch.tensor([float(point["mri_day"]) for point in points])
         survival = [point["survival"] for point in points[1:]]
         prefixes = [
-            treatment_text(self.pack_treatment, points[: horizon + 1])
+            treatment_text(points[: horizon + 1])
             for horizon in range(1, 4)
         ]
         return {
             "mri": torch.stack([self.mri_loader.load(identifier) for identifier in ids]),
             "step_text": [
-                treatment_text(self.pack_treatment, points[step : step + 2])
+                treatment_text(points[step : step + 2])
                 for step in range(3)
             ],
             "prefix_text": prefixes,
@@ -145,6 +265,12 @@ class StagewiseTrajectoryDataset(Dataset):
             "event": torch.tensor([float(item["event_indicator"]) for item in survival]),
             "patient": trajectory.patient_id,
             "timepoints": [point["tp_id"] for point in points],
+            "primary_survival_window": (
+                trajectory.patient_id,
+                points[0]["tp_id"],
+                points[-1]["tp_id"],
+            )
+            in self._primary_window_keys,
         }
 
     @staticmethod
@@ -165,4 +291,8 @@ class StagewiseTrajectoryDataset(Dataset):
             "event": torch.stack([sample["event"] for sample in samples]),
             "patient": [sample["patient"] for sample in samples],
             "timepoints": [sample["timepoints"] for sample in samples],
+            "primary_survival_window": torch.tensor(
+                [sample["primary_survival_window"] for sample in samples],
+                dtype=torch.bool,
+            ),
         }

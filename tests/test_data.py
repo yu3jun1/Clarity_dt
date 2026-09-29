@@ -8,6 +8,7 @@ import torch
 from clarity_rrt_v3.data import (
     CachedMRIVolumeLoader,
     StagewiseTrajectoryDataset,
+    extract_treatment_category,
 )
 
 
@@ -28,7 +29,15 @@ class FakeBase:
                 {
                     "tp_id": f"TP{index}",
                     "mri_day": index * 30,
-                    "actions": {"drug": [{"agent": f"d{index}"}]},
+                    "actions": {
+                        "drug": [
+                            {
+                                "agent": f"d{index}",
+                                "interval_start_day": (index - 1) * 30 + 1,
+                                "interval_end_day": index * 30,
+                            }
+                        ]
+                    },
                     "survival": {
                         "survival_from_tp_days": 600 - index * 30,
                         "event_indicator": 1,
@@ -43,10 +52,6 @@ class FakeBase:
         self.mri_loader = FakeMRI()
 
     @staticmethod
-    def _pack_drugs_json(item):
-        return json.dumps(item, sort_keys=True)
-
-    @staticmethod
     def _format_clinical_text(context):
         return "clinical"
 
@@ -56,7 +61,6 @@ def dataset():
     return StagewiseTrajectoryDataset(
         base.patients,
         base.mri_loader,
-        base._pack_drugs_json,
         base._format_clinical_text,
         ["P1"],
     )
@@ -70,7 +74,75 @@ def test_dataset_builds_consecutive_four_stage_windows():
     assert first["deltas"].tolist() == [30.0, 30.0, 30.0]
     assert len(first["step_text"]) == 3
     full_plan = json.loads(first["full_text"])
-    assert len(full_plan["between_actions"]) == 2
+    assert len(full_plan["intervals"]) == 3
+    first_step = json.loads(first["step_text"][0])
+    assert first_step == {
+        "intervals": [
+            {
+                "start_tp": "TP1",
+                "end_tp": "TP2",
+                "actions": {
+                    "drug": [{"agent": "d2", "start_offset_days": 1, "end_offset_days": 30}]
+                },
+            }
+        ]
+    }
+    assert trajectories.cohort_counts() == {
+        "trajectory_count": 2,
+        "unique_patient_count": 1,
+        "primary_survival_window_count": 1,
+    }
+    assert trajectories.primary_trajectories()[0].points == trajectories.trajectories[0].points
+
+
+def test_interval_treatment_excludes_future_and_course_wide_information():
+    trajectories = dataset()
+    points = trajectories.trajectories[0].points
+    points[1]["actions"]["drug"].extend(
+        [
+            {
+                "agent": "future",
+                "start_day": 70,
+                "end_day": 80,
+                "assigned_reason": "beyond_last_tp",
+            },
+            {
+                "agent": "spanning",
+                "start_day": 50,
+                "end_day": 90,
+                "cycle_length_days": 10,
+                "num_cycles": 5,
+            },
+        ]
+    )
+
+    actions = json.loads(trajectories[0]["step_text"][0])["intervals"][0]["actions"]
+    assert actions["drug"] == [
+        {"agent": "d2", "start_offset_days": 1, "end_offset_days": 30},
+        {
+            "agent": "spanning",
+            "cycle_length_days": 10,
+            "start_offset_days": 20,
+            "end_offset_days": 30,
+        },
+    ]
+
+
+def test_interval_treatment_category_uses_interval_actions():
+    text = json.dumps(
+        {
+            "intervals": [
+                {
+                    "actions": {
+                        "radiation": [{}],
+                        "chemotherapy": [{"agent": "Temozolomide"}],
+                        "additional_2": [{"agent": "Avastin"}],
+                    }
+                }
+            ]
+        }
+    )
+    assert extract_treatment_category(text) == "BEV+RT+TMZ"
 
 
 def test_collate_keeps_step_and_prefix_text_separate():
@@ -80,6 +152,7 @@ def test_collate_keeps_step_and_prefix_text_separate():
     assert len(batch["step_text"]) == 3
     assert len(batch["prefix_text"]) == 3
     assert all(len(texts) == 2 for texts in batch["step_text"])
+    assert batch["primary_survival_window"].tolist() == [True, False]
 
 
 def test_cached_mri_loader_reads_manifest_entry(tmp_path):

@@ -13,12 +13,13 @@ def test_uncertainty_reports_v3_secondary_metrics():
                     "latent_disagreement": float(index),
                     "latent_mse": float(index + 1),
                     "survival_probability_std": float(index) / 10.0,
+                    "primary_survival_window": int(index < 2),
                 }
             )
     result = uncertainty_metrics(rows)
     assert result["H3"]["latent_disagreement_error_pearson"] == 1.0
     assert result["H1"]["latent_disagreement_mean"] == 1.5
-    assert result["H2"]["survival_probability_disagreement_mean"] == pytest.approx(0.15)
+    assert result["H2"]["survival_probability_disagreement_mean"] == pytest.approx(0.05)
 
 
 def test_cross_seed_summary_keeps_secondary_and_representation_metrics():

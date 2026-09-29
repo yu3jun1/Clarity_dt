@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
+
 import torch
 from torch import nn
 
 from clarity_rrt_v3.model import StagewiseDynamics
-from clarity_rrt_v3.train import mean_horizon_l1
+from clarity_rrt_v3.train import counterfactual_loss, mean_horizon_l1
 
 
 class TinyTextEncoder(nn.Module):
@@ -69,6 +71,36 @@ class TinyClarity(nn.Module):
         self.shared_text_encoder = TinyTextEncoder()
         self.survival_module = TinySurvival()
         self.mri_encoder = nn.Identity()
+        self.cf_calls = []
+
+    def drug_swap_diversity_loss(
+        self,
+        predictor,
+        pre_latent,
+        condition_emb,
+        time_delta,
+        pred_latent,
+        drug_categories,
+        cos_margin,
+    ):
+        self.cf_calls.append(
+            {
+                "condition": condition_emb,
+                "categories": drug_categories,
+                "margin": cos_margin,
+            }
+        )
+        return condition_emb.mean()
+
+
+
+def interval_text(agent):
+    actions = (
+        {"chemotherapy": [{"agent": agent}]}
+        if agent is not None
+        else {}
+    )
+    return json.dumps({"intervals": [{"actions": actions}]})
 
 
 def inputs():
@@ -91,6 +123,71 @@ def test_recursive_loss_weights_all_three_horizons_equally():
     targets = torch.tensor([[[[1.0]], [[2.0]], [[6.0]]]])
     loss = mean_horizon_l1(member_states, targets)
     torch.testing.assert_close(loss, torch.tensor(3.0))
+
+
+def test_open_loop_counterfactual_loss_uses_full_plan_condition():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
+    initial = torch.zeros(4, 5, 3)
+    member_states = torch.zeros(2, 4, 1, 5, 3)
+    conditions = torch.full((4, 1, 4), 4.0)
+    deltas = torch.ones(4, 1)
+    texts = [
+        [
+            interval_text(agent)
+            for agent in ("Temozolomide", "Avastin", "Lomustine", None)
+        ]
+    ]
+
+    loss = counterfactual_loss(
+        model,
+        initial,
+        member_states,
+        conditions,
+        deltas,
+        texts,
+        0.9,
+    )
+
+    torch.testing.assert_close(loss, torch.tensor(4.0))
+    assert len(model.clarity.cf_calls) == 2
+    assert all(
+        call["categories"] == ["TMZ", "BEV", "OTHER", "no_treatment"]
+        for call in model.clarity.cf_calls
+    )
+
+
+def test_recursive_counterfactual_loss_averages_stage_conditions():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
+    initial = torch.zeros(4, 5, 3)
+    member_states = torch.zeros(2, 4, 3, 5, 3)
+    conditions = torch.stack(
+        [torch.full((4, 4), value) for value in (1.0, 2.0, 6.0)],
+        dim=1,
+    )
+    deltas = torch.ones(4, 3)
+    texts = [
+        [
+            interval_text(agent)
+            for agent in ("Temozolomide", "Avastin", "Lomustine", None)
+        ]
+        for _ in range(3)
+    ]
+
+    loss = counterfactual_loss(
+        model,
+        initial,
+        member_states,
+        conditions,
+        deltas,
+        texts,
+        0.9,
+    )
+
+    torch.testing.assert_close(loss, torch.tensor(3.0))
+    assert len(model.clarity.cf_calls) == 6
+    assert [call["categories"] for call in model.clarity.cf_calls[:3]] == [
+        ["TMZ", "BEV", "OTHER", "no_treatment"] for _ in range(3)
+    ]
 
 
 def test_rollout_feeds_each_member_its_own_prediction():

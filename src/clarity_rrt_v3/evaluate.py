@@ -12,6 +12,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from .data import PRIMARY_SURVIVAL_WINDOW_RULE
 from .model import StagewiseDynamics
 from .train import (
     build_loaders,
@@ -27,7 +28,7 @@ from .train import (
 def training_reference(dataset, horizon: int) -> tuple[np.ndarray, np.ndarray]:
     times = []
     events = []
-    for trajectory in dataset.trajectories:
+    for trajectory in dataset.primary_trajectories():
         survival = trajectory.points[horizon]["survival"]
         times.append(float(survival["survival_from_tp_days"]))
         events.append(bool(survival["event_indicator"]))
@@ -126,6 +127,10 @@ def recursive_predictions(
                         "patient": batch["patient"][sample],
                         "start": batch["timepoints"][sample][0],
                         "end": batch["timepoints"][sample][horizon + 1],
+                        "window_end": batch["timepoints"][sample][-1],
+                        "primary_survival_window": int(
+                            batch["primary_survival_window"][sample]
+                        ),
                         "horizon": horizon + 1,
                         "latent_mse": float(mse[sample, horizon].cpu()),
                         "cosine_similarity": float(cosine[sample, horizon].cpu()),
@@ -157,23 +162,26 @@ def recursive_predictions(
 
 def horizon_metrics(
     rows: Sequence[Mapping[str, Any]],
+    survival_rows: Sequence[Mapping[str, Any]],
     reference: tuple[np.ndarray, np.ndarray],
     concordance_index,
-) -> dict[str, float]:
+) -> dict[str, float | int]:
     return {
-        "samples": float(len(rows)),
+        "trajectory_count": len(rows),
+        "unique_patient_count": len({row["patient"] for row in rows}),
+        "primary_survival_window_count": len(survival_rows),
         "latent_mse": float(np.mean([row["latent_mse"] for row in rows])),
         "cosine_similarity": float(
             np.mean([row["cosine_similarity"] for row in rows])
         ),
         "c_index": float(
             concordance_index(
-                [row["risk"] for row in rows],
-                [row["survival_time"] for row in rows],
-                [row["event"] for row in rows],
+                [row["risk"] for row in survival_rows],
+                [row["survival_time"] for row in survival_rows],
+                [row["event"] for row in survival_rows],
             )
         ),
-        "brier365": brier365(*reference, rows),
+        "brier365": brier365(*reference, survival_rows),
     }
 
 
@@ -187,13 +195,14 @@ def uncertainty_metrics(
             [row["latent_disagreement"] for row in selected]
         )
         error = np.asarray([row["latent_mse"] for row in selected])
+        primary = [row for row in selected if row["primary_survival_window"]]
         result[f"H{horizon}"] = {
             "latent_disagreement_mean": float(disagreement.mean()),
             "latent_disagreement_error_pearson": float(
                 np.corrcoef(disagreement, error)[0, 1]
             ),
             "survival_probability_disagreement_mean": float(
-                np.mean([row["survival_probability_std"] for row in selected])
+                np.mean([row["survival_probability_std"] for row in primary])
             ),
         }
     return result
@@ -222,6 +231,7 @@ def evaluate_one(
     model.load_state_dict(checkpoint["state_dict"], strict=False)
     loaders, datasets = build_loaders(config, seed)
     rows, representation = recursive_predictions(model, loaders["test"], device)
+    primary_rows = [row for row in rows if row["primary_survival_window"]]
     representation["encoder_trainable_parameter_rms_delta"] = encoder_rms_delta(
         model, initial_encoder
     )
@@ -235,8 +245,10 @@ def evaluate_one(
     horizons = {}
     for horizon in (1, 2, 3):
         horizon_rows = [row for row in rows if row["horizon"] == horizon]
+        survival_rows = [row for row in primary_rows if row["horizon"] == horizon]
         horizons[f"H{horizon}"] = horizon_metrics(
             horizon_rows,
+            survival_rows,
             training_reference(datasets["train"], horizon),
             concordance,
         )
@@ -245,6 +257,10 @@ def evaluate_one(
         "seed": seed,
         "training_scheme": checkpoint["training_scheme"],
         "checkpoint_epoch": int(checkpoint["epoch"]),
+        "cohort_counts": {
+            name: dataset.cohort_counts() for name, dataset in datasets.items()
+        },
+        "primary_survival_window_rule": PRIMARY_SURVIVAL_WINDOW_RULE,
         "recursive": horizons,
         "representation_sanity": representation,
         "error_accumulation": (
@@ -318,12 +334,21 @@ def summarize_runs(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def aggregate(config_path: str | Path) -> dict[str, Any]:
     config = load_config(config_path)
-    primary = {
-        variant: summarize_runs(runs)
+    runs_by_variant = {
+        variant: runs
         for variant in "ABCD"
         if (runs := collect_runs(config, variant))
     }
-    output = {"primary": primary}
+    primary = {
+        variant: summarize_runs(runs) for variant, runs in runs_by_variant.items()
+    }
+    output: dict[str, Any] = {"primary": primary}
+    if runs_by_variant:
+        representative = next(iter(runs_by_variant.values()))[0]
+        output["cohort_counts"] = representative["cohort_counts"]
+        output["primary_survival_window_rule"] = representative[
+            "primary_survival_window_rule"
+        ]
     root = Path(config["output_root"])
     root.mkdir(parents=True, exist_ok=True)
     (root / "summary.json").write_text(
@@ -337,11 +362,34 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
     lines = [
         "# Pure Stage-wise RRT v3",
         "",
+    ]
+    if "cohort_counts" in output:
+        lines.extend(
+            [
+                "## Cohort and primary survival unit",
+                "",
+                f"Primary survival window rule: `{output['primary_survival_window_rule']}`.",
+                "",
+                "| Split | Trajectories | Unique patients | Primary survival windows |",
+                "|---|---:|---:|---:|",
+            ]
+        )
+        for split in ("train", "validation", "test"):
+            counts = output["cohort_counts"][split]
+            lines.append(
+                f"| {split} | {counts['trajectory_count']} | "
+                f"{counts['unique_patient_count']} | "
+                f"{counts['primary_survival_window_count']} |"
+            )
+        lines.append("")
+    lines.extend(
+        [
         "## Table 1 — Recursive Latent Dynamics",
         "",
         "| Group | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
         "|---|---:|---:|---:|---:|---:|---:|",
-    ]
+        ]
+    )
     for variant in "ABCD":
         if variant not in primary:
             continue
@@ -356,7 +404,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
     lines.extend(
         [
             "",
-            "## Table 2 — H3 End-to-End Prognosis",
+            "## Table 2 — H3 End-to-End Prognosis (one window per patient)",
             "",
             "| Group | H3 C-index ↑ | H3 Brier@365 ↓ |",
             "|---|---:|---:|",
@@ -409,7 +457,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
     lines.extend(
         [
             "",
-            "## Appendix — H1/H2 Prognosis",
+            "## Appendix — H1/H2 Prognosis (one window per patient)",
             "",
             "| Group | H1 C-index ↑ | H2 C-index ↑ | H1 Brier@365 ↓ | H2 Brier@365 ↓ |",
             "|---|---:|---:|---:|---:|",
