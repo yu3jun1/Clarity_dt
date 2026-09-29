@@ -67,6 +67,12 @@ class Trajectory:
     points: tuple[Mapping[str, Any], ...]
 
 
+@dataclass(frozen=True)
+class Pair:
+    patient_id: str
+    points: tuple[Mapping[str, Any], ...]
+
+
 def _action_interval(
     action: Mapping[str, Any], start_day: int, end_day: int
 ) -> tuple[int, int] | None:
@@ -167,6 +173,110 @@ def extract_treatment_category(text: str) -> str:
                     elif agent:
                         categories.add("OTHER")
     return "+".join(sorted(categories)) if categories else "no_treatment"
+
+
+class AllPairDataset(Dataset):
+    """All valid true-state MRI pairs from a fixed patient split."""
+
+    def __init__(
+        self,
+        patients: Mapping[str, Any],
+        mri_loader: Any,
+        format_clinical: Callable[[dict[str, Any]], str],
+        patient_ids: Iterable[str],
+        primary_window_keys: set[tuple[str, str, str]],
+    ) -> None:
+        self.patients = patients
+        self.mri_loader = mri_loader
+        self.format_clinical = format_clinical
+        self.primary_window_keys = primary_window_keys
+        self.pairs: list[Pair] = []
+        for patient_id in sorted(set(map(str, patient_ids))):
+            patient = patients["patients"].get(patient_id, {})
+            timeline = sorted(
+                patient.get("timeline", []),
+                key=lambda point: parse_timepoint(point.get("tp_id", "")),
+            )
+            for start in range(len(timeline) - 1):
+                pre = timeline[start]
+                pre_id = mri_id(patient_id, pre["tp_id"])
+                if not mri_loader.has(pre_id):
+                    continue
+                for end in range(start + 1, len(timeline)):
+                    post = timeline[end]
+                    post_id = mri_id(patient_id, post["tp_id"])
+                    if float(post.get("mri_day", 0)) <= float(pre.get("mri_day", 0)):
+                        continue
+                    if not mri_loader.has(post_id) or not valid_survival(post):
+                        continue
+                    self.pairs.append(Pair(patient_id, tuple(timeline[start : end + 1])))
+
+    def __len__(self) -> int:
+        return len(self.pairs)
+
+    @property
+    def unique_patient_count(self) -> int:
+        return len({pair.patient_id for pair in self.pairs})
+
+    def cohort_counts(self) -> dict[str, int]:
+        return {
+            "pair_count": len(self.pairs),
+            "unique_patient_count": self.unique_patient_count,
+            "primary_survival_pair_count": sum(
+                self._is_primary(pair) for pair in self.pairs
+            ),
+        }
+
+    def _is_primary(self, pair: Pair) -> bool:
+        return (
+            pair.patient_id,
+            pair.points[0]["tp_id"],
+            pair.points[-1]["tp_id"],
+        ) in self.primary_window_keys
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        pair = self.pairs[index]
+        pre = pair.points[0]
+        post = pair.points[-1]
+        survival = post["survival"]
+        return {
+            "pre_mri": self.mri_loader.load(mri_id(pair.patient_id, pre["tp_id"])),
+            "post_mri": self.mri_loader.load(mri_id(pair.patient_id, post["tp_id"])),
+            "treatment_text": treatment_text(pair.points),
+            "clinical_text": self.format_clinical(
+                self.patients["patients"][pair.patient_id].get("context_static", {})
+            ),
+            "time_delta": torch.tensor(
+                float(post["mri_day"]) - float(pre["mri_day"])
+            ),
+            "survival_time": torch.tensor(
+                float(survival["survival_from_tp_days"])
+            ),
+            "event": torch.tensor(float(survival["event_indicator"])),
+            "patient": pair.patient_id,
+            "timepoints": [pre["tp_id"], post["tp_id"]],
+            "primary_survival_window": self._is_primary(pair),
+        }
+
+    @staticmethod
+    def collate(samples: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        return {
+            "pre_mri": torch.stack([sample["pre_mri"] for sample in samples]),
+            "post_mri": torch.stack([sample["post_mri"] for sample in samples]),
+            "treatment_text": [sample["treatment_text"] for sample in samples],
+            "clinical_text": [sample["clinical_text"] for sample in samples],
+            "time_delta": torch.stack([sample["time_delta"] for sample in samples]),
+            "survival_time": torch.stack(
+                [sample["survival_time"] for sample in samples]
+            ),
+            "event": torch.stack([sample["event"] for sample in samples]),
+            "patient": [sample["patient"] for sample in samples],
+            "timepoints": [sample["timepoints"] for sample in samples],
+            "primary_survival_window": torch.tensor(
+                [sample["primary_survival_window"] for sample in samples],
+                dtype=torch.bool,
+            ),
+        }
 
 
 class StagewiseTrajectoryDataset(Dataset):

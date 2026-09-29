@@ -79,6 +79,10 @@ class TinyClarity(nn.Module):
         self.mri_encoder = nn.Identity()
         self.cf_calls = []
 
+    @staticmethod
+    def _simple_cox_loss(risks, survival_time, event):
+        return risks.mean()
+
     def drug_swap_diversity_loss(
         self,
         predictor,
@@ -91,6 +95,7 @@ class TinyClarity(nn.Module):
     ):
         self.cf_calls.append(
             {
+                "pre_latent": pre_latent,
                 "condition": condition_emb,
                 "categories": drug_categories,
                 "margin": cos_margin,
@@ -122,6 +127,50 @@ def test_direct_path_uses_only_initial_state_and_full_plan():
     output = model.direct(states[:, 0], conditions[:, -1], deltas.sum(dim=1))
     assert output.shape == (1, 2, 5, 3)
     torch.testing.assert_close(model.predictors[0].calls[0], states[:, 0])
+
+
+def test_clarity_all_pair_step_uses_one_true_pre_state_pair():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=1, seed=42)
+    trainer = object.__new__(Trainer)
+    trainer.model = model
+    trainer.device = torch.device("cpu")
+    trainer.variant = "A"
+    trainer.config = {
+        "variants": {"A": {"training_scheme": "clarity_all_pair"}},
+        "training": {
+            "warmup_epochs": 0,
+            "lambda_l1": 0.5,
+            "lambda_cox": 1.0,
+            "lambda_bce": 1.0,
+            "cf_weight": 1.0,
+            "cf_cos_margin": 0.9,
+        },
+    }
+    batch = {
+        "pre_mri": torch.randn(2, 5, 3),
+        "post_mri": torch.randn(2, 5, 3),
+        "treatment_text": [
+            interval_text("Temozolomide"),
+            interval_text("Avastin"),
+        ],
+        "clinical_text": ["clinical one", "clinical two"],
+        "time_delta": torch.tensor([30.0, 60.0]),
+        "survival_time": torch.tensor([500.0, 250.0]),
+        "event": torch.tensor([1.0, 1.0]),
+    }
+
+    total, values, risk = trainer.step(batch, epoch=1, compute_cf=True)
+
+    assert total.ndim == 0
+    assert set(values) == {"loss", "latent", "cox", "bce", "cf"}
+    assert risk.shape == (2,)
+    assert len(model.predictors[0].calls) == 1
+    torch.testing.assert_close(model.predictors[0].calls[0], batch["pre_mri"])
+    assert len(model.clarity.cf_calls) == 1
+    torch.testing.assert_close(
+        model.clarity.cf_calls[0]["pre_latent"],
+        batch["pre_mri"],
+    )
 
 
 def test_recursive_loss_weights_all_three_horizons_equally():

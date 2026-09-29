@@ -239,7 +239,7 @@ def evaluate_one(
         "Checkpoint CLARITY commit does not match the configured upstream commit"
     )
     model.load_state_dict(checkpoint["state_dict"], strict=False)
-    loaders, datasets = build_loaders(config, seed)
+    loaders, datasets = build_loaders(config, seed, variant)
     rows, representation = recursive_predictions(model, loaders["test"], device)
     primary_rows = [row for row in rows if row["primary_survival_window"]]
     representation["encoder_trainable_parameter_rms_delta"] = encoder_rms_delta(
@@ -281,6 +281,11 @@ def evaluate_one(
             horizons["H3"]["latent_mse"] - horizons["H1"]["latent_mse"]
         ),
     }
+    if variant_config["training_scheme"] == "clarity_all_pair":
+        metrics["all_pair_counts"] = {
+            name: loaders[name].dataset.cohort_counts()
+            for name in ("train", "validation")
+        }
     if int(variant_config["ensemble_size"]) > 1:
         metrics["uncertainty"] = uncertainty_metrics(rows)
     (run_dir / "metrics.json").write_text(
@@ -364,6 +369,8 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             "checkpoint_selection_criterion"
         ]
         output["upstream_commit"] = representative["upstream_commit"]
+        if "all_pair_counts" in representative:
+            output["all_pair_counts"] = representative["all_pair_counts"]
         output["cohort_counts"] = representative["cohort_counts"]
         output["primary_survival_window_rule"] = representative[
             "primary_survival_window_rule"

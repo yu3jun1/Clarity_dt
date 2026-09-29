@@ -14,6 +14,10 @@ def test_pure_rrt_v3_config_builds_upstream_args():
     assert args.lambda_l1 == 0.5
     assert args.lambda_cox == 1.0
     assert args.lambda_bce == 1.0
+    assert config["training"]["batch_size"] == 16
+    assert config["training"]["evaluation_batch_size"] == 16
     assert args.seed == 42
     assert config["upstream_commit"] == UPSTREAM_COMMIT
+    assert config["variants"]["A"]["training_scheme"] == "clarity_all_pair"
+    assert config["output_root"] == "outputs/pure_rrt_v3_clarity_allpair"
     assert assert_upstream_commit(config) == UPSTREAM_COMMIT

@@ -1,4 +1,4 @@
-"""Train open-loop CLARITY and pure recursive RRT experiment groups."""
+"""Train CLARITY all-pairs, endpoint, and pure recursive RRT groups."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from torch.utils.data import DataLoader
 
 from .data import (
     PRIMARY_SURVIVAL_WINDOW_RULE,
+    AllPairDataset,
     CachedMRIVolumeLoader,
     StagewiseTrajectoryDataset,
     extract_treatment_category,
@@ -122,22 +123,42 @@ def build_datasets(config: Mapping[str, Any]) -> dict[str, StagewiseTrajectoryDa
 
 
 def build_loaders(
-    config: Mapping[str, Any], seed: int
+    config: Mapping[str, Any],
+    seed: int,
+    variant: str,
 ) -> tuple[dict[str, DataLoader], dict[str, StagewiseTrajectoryDataset]]:
     datasets = build_datasets(config)
+    loader_datasets: dict[str, Any] = dict(datasets)
+    if config["variants"][variant]["training_scheme"] == "clarity_all_pair":
+        for name in ("train", "validation"):
+            trajectory_dataset = datasets[name]
+            eligible_patient_ids = {
+                trajectory.patient_id
+                for trajectory in trajectory_dataset.trajectories
+            }
+            loader_datasets[name] = AllPairDataset(
+                trajectory_dataset.patients,
+                trajectory_dataset.mri_loader,
+                trajectory_dataset.format_clinical,
+                eligible_patient_ids,
+                trajectory_dataset.primary_window_keys(),
+            )
+
     training = config["training"]
     loaders = {
         name: DataLoader(
             dataset,
             batch_size=int(
-                training["batch_size"] if name == "train" else training["evaluation_batch_size"]
+                training["batch_size"]
+                if name == "train"
+                else training["evaluation_batch_size"]
             ),
             shuffle=name == "train",
             generator=torch.Generator().manual_seed(seed) if name == "train" else None,
             num_workers=int(training["num_workers"]),
-            collate_fn=StagewiseTrajectoryDataset.collate,
+            collate_fn=dataset.collate,
         )
-        for name, dataset in datasets.items()
+        for name, dataset in loader_datasets.items()
     }
     return loaders, datasets
 
@@ -318,8 +339,77 @@ class Trainer:
         self.best_c_index = -float("inf")
 
     @property
+    def clarity_all_pair(self) -> bool:
+        return (
+            self.config["variants"][self.variant]["training_scheme"]
+            == "clarity_all_pair"
+        )
+
+    @property
     def pure_recursive(self) -> bool:
         return self.config["variants"][self.variant]["training_scheme"] == "pure_recursive"
+
+    def _all_pair_step(
+        self,
+        batch: Mapping[str, Any],
+        epoch: int,
+        compute_cf: bool,
+    ) -> tuple[torch.Tensor, dict[str, float], torch.Tensor]:
+        initial = self.model.mri_encoder(batch["pre_mri"].to(self.device))
+        target = self.model.mri_encoder(batch["post_mri"].to(self.device)).detach()
+        condition = self.model.encode_conditions(
+            [batch["treatment_text"]],
+            batch["clinical_text"],
+        )
+        delta = batch["time_delta"].to(self.device)
+        direct = self.model.direct(initial, condition[:, 0], delta)
+        latent = F.l1_loss(
+            direct,
+            target.unsqueeze(0).expand_as(direct),
+        )
+        terminal = direct.unsqueeze(2)
+        risks, logits = self.model.survival(initial, terminal, condition)
+        survival_time = batch["survival_time"].to(self.device)
+        event = batch["event"].to(self.device)
+        cox, bce = outcome_loss(
+            self.model,
+            risks[:, :, 0],
+            logits[:, :, 0],
+            survival_time,
+            event,
+        )
+
+        training = self.config["training"]
+        cf = (
+            counterfactual_loss(
+                self.model,
+                initial,
+                terminal,
+                condition,
+                delta.unsqueeze(1),
+                [batch["treatment_text"]],
+                float(training["cf_cos_margin"]),
+            )
+            if compute_cf
+            else latent.new_zeros(())
+        )
+        if epoch <= int(training["warmup_epochs"]):
+            total = latent
+        else:
+            total = (
+                float(training["lambda_l1"]) * latent
+                + float(training["lambda_cox"]) * cox
+                + float(training["lambda_bce"]) * bce
+            )
+        total = total + float(training["cf_weight"]) * cf
+        values = {
+            "loss": float(total.detach()),
+            "latent": float(latent.detach()),
+            "cox": float(cox.detach()),
+            "bce": float(bce.detach()),
+            "cf": float(cf.detach()),
+        }
+        return total, values, risks[:, :, 0].mean(dim=0).detach()
 
     def step(
         self,
@@ -327,6 +417,9 @@ class Trainer:
         epoch: int,
         compute_cf: bool,
     ) -> tuple[torch.Tensor, dict[str, float], torch.Tensor]:
+        if self.clarity_all_pair:
+            return self._all_pair_step(batch, epoch, compute_cf)
+
         mri = batch["mri"].to(self.device)
         deltas = batch["deltas"].to(self.device)
         terminal_time = batch["survival_time"][:, 2].to(self.device)
@@ -430,8 +523,12 @@ class Trainer:
                     records[name].append(value)
                 batch_sizes.append(len(batch["patient"]))
                 risks.append(risk.cpu())
-                times.append(batch["survival_time"][:, 2])
-                events.append(batch["event"][:, 2])
+                if self.clarity_all_pair:
+                    times.append(batch["survival_time"])
+                    events.append(batch["event"])
+                else:
+                    times.append(batch["survival_time"][:, 2])
+                    events.append(batch["event"][:, 2])
                 primary_windows.append(batch["primary_survival_window"])
         result = {
             name: float(np.average(values, weights=batch_sizes))
@@ -530,7 +627,7 @@ def train_one(
         ensemble_size=int(variant_config["ensemble_size"]),
         seed=seed,
     ).to(device)
-    loaders, datasets = build_loaders(config, seed)
+    loaders, datasets = build_loaders(config, seed, variant)
     optimizer, scheduler = build_optimizer(config, model)
     run_dir = run_directory(config, variant, seed)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -545,6 +642,11 @@ def train_one(
     resolved["cohort_counts"] = {
         name: dataset.cohort_counts() for name, dataset in datasets.items()
     }
+    if variant_config["training_scheme"] == "clarity_all_pair":
+        resolved["all_pair_counts"] = {
+            name: loaders[name].dataset.cohort_counts()
+            for name in ("train", "validation")
+        }
     (run_dir / "config.yaml").write_text(
         yaml.safe_dump(resolved, sort_keys=False), encoding="utf-8"
     )

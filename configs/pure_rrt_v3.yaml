@@ -1,6 +1,6 @@
 upstream_root: third_party/CLARITY
 upstream_commit: dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
-output_root: outputs/pure_rrt_v3
+output_root: outputs/pure_rrt_v3_clarity_allpair
 
 data:
   timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
@@ -19,7 +19,7 @@ model:
   dropout: 0.3
 
 variants:
-  A: {training_scheme: open_loop, ensemble_size: 1}
+  A: {training_scheme: clarity_all_pair, ensemble_size: 1}
   B: {training_scheme: pure_recursive, ensemble_size: 1}
   C: {training_scheme: open_loop, ensemble_size: 3}
   D: {training_scheme: pure_recursive, ensemble_size: 3}
@@ -27,8 +27,8 @@ variants:
 training:
   epochs: 100
   warmup_epochs: 10
-  batch_size: 4
-  evaluation_batch_size: 4
+  batch_size: 16
+  evaluation_batch_size: 16
   num_workers: 2
   seeds: [42, 43, 44]
   lr: 2.0e-4
