@@ -6,7 +6,13 @@ import torch
 from torch import nn
 
 from clarity_rrt_v3.model import StagewiseDynamics
-from clarity_rrt_v3.train import counterfactual_loss, mean_horizon_l1
+from clarity_rrt_v3.train import (
+    CINDEX_CHECKPOINT_NAME,
+    PRIMARY_CHECKPOINT_NAME,
+    Trainer,
+    counterfactual_loss,
+    mean_horizon_l1,
+)
 
 
 class TinyTextEncoder(nn.Module):
@@ -207,3 +213,56 @@ def test_survival_head_is_shared_across_members_and_horizons():
     risks, logits = model.survival(states[:, 0], rollout, conditions)
     assert risks.shape == (3, 2, 3)
     assert logits.shape == (3, 2, 3)
+
+
+class CountingScheduler:
+    def __init__(self):
+        self.steps = 0
+
+    def step(self):
+        self.steps += 1
+
+
+class CheckpointSelectionTrainer(Trainer):
+    def __init__(self):
+        self.config = {"training": {"epochs": 4, "warmup_epochs": 1}}
+        self.scheduler = CountingScheduler()
+        self.history = []
+        self.best_val_loss = float("inf")
+        self.best_c_index = -float("inf")
+        self.saved = []
+
+    def epoch(self, epoch, training):
+        if training:
+            return {"loss": 10.0, "c_index": 0.0}
+        return {
+            1: {"loss": 1.0, "c_index": 0.9},
+            2: {"loss": 4.0, "c_index": 0.6},
+            3: {"loss": 3.0, "c_index": 0.5},
+            4: {"loss": 3.5, "c_index": 0.7},
+        }[epoch]
+
+    def write_history(self):
+        pass
+
+    def save(self, epoch, filename, selection_criterion, validation):
+        self.saved.append((epoch, filename, selection_criterion, dict(validation)))
+
+
+def test_checkpoint_selection_uses_val_loss_for_primary_and_cindex_for_secondary():
+    trainer = CheckpointSelectionTrainer()
+    trainer.fit()
+
+    saved = [
+        (epoch, filename, criterion)
+        for epoch, filename, criterion, _ in trainer.saved
+    ]
+    assert saved == [
+        (2, PRIMARY_CHECKPOINT_NAME, "validation_total_loss"),
+        (2, CINDEX_CHECKPOINT_NAME, "validation_patient_level_c_index"),
+        (3, PRIMARY_CHECKPOINT_NAME, "validation_total_loss"),
+        (4, CINDEX_CHECKPOINT_NAME, "validation_patient_level_c_index"),
+    ]
+    assert trainer.best_val_loss == 3.0
+    assert trainer.best_c_index == 0.7
+    assert trainer.scheduler.steps == 4

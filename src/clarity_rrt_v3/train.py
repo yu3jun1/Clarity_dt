@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import random
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
@@ -30,9 +31,26 @@ from .data import (
 from .model import StagewiseDynamics
 
 
+PRIMARY_CHECKPOINT_NAME = "best_val_loss.pt"
+CINDEX_CHECKPOINT_NAME = "best_val_cindex.pt"
+
+
 def load_config(path: str | Path) -> dict[str, Any]:
     with Path(path).open("r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
+
+
+def assert_upstream_commit(config: Mapping[str, Any]) -> str:
+    root = Path(config["upstream_root"]).resolve()
+    expected = str(config["upstream_commit"])
+    actual = subprocess.check_output(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+    assert actual == expected, (
+        f"CLARITY commit mismatch: expected {expected}, found {actual} in {root}"
+    )
+    return actual
 
 
 def configure_upstream(upstream_root: str | Path):
@@ -296,6 +314,7 @@ class Trainer:
         self.device = device
         self.run_dir = run_dir
         self.history: list[dict[str, float]] = []
+        self.best_val_loss = float("inf")
         self.best_c_index = -float("inf")
 
     @property
@@ -390,6 +409,7 @@ class Trainer:
         self.model.train(training)
         loader = self.loaders["train" if training else "validation"]
         records = {name: [] for name in ("loss", "latent", "cox", "bce", "cf")}
+        batch_sizes = []
         risks = []
         times = []
         events = []
@@ -408,11 +428,15 @@ class Trainer:
                     self.optimizer.step()
                 for name, value in values.items():
                     records[name].append(value)
+                batch_sizes.append(len(batch["patient"]))
                 risks.append(risk.cpu())
                 times.append(batch["survival_time"][:, 2])
                 events.append(batch["event"][:, 2])
                 primary_windows.append(batch["primary_survival_window"])
-        result = {name: float(np.mean(values)) for name, values in records.items()}
+        result = {
+            name: float(np.average(values, weights=batch_sizes))
+            for name, values in records.items()
+        }
         primary = torch.cat(primary_windows)
         result["c_index"] = float(
             self.concordance_index(
@@ -434,12 +458,23 @@ class Trainer:
             row.update({f"validation_{name}": value for name, value in validation.items()})
             self.history.append(row)
             self.write_history()
-            if (
-                epoch > int(self.config["training"]["warmup_epochs"])
-                and validation["c_index"] > self.best_c_index
-            ):
-                self.best_c_index = validation["c_index"]
-                self.save(epoch)
+            if epoch > int(self.config["training"]["warmup_epochs"]):
+                if validation["loss"] < self.best_val_loss:
+                    self.best_val_loss = validation["loss"]
+                    self.save(
+                        epoch,
+                        PRIMARY_CHECKPOINT_NAME,
+                        "validation_total_loss",
+                        validation,
+                    )
+                if validation["c_index"] > self.best_c_index:
+                    self.best_c_index = validation["c_index"]
+                    self.save(
+                        epoch,
+                        CINDEX_CHECKPOINT_NAME,
+                        "validation_patient_level_c_index",
+                        validation,
+                    )
             print(json.dumps(row, sort_keys=True), flush=True)
 
     def write_history(self) -> None:
@@ -448,7 +483,13 @@ class Trainer:
             writer.writeheader()
             writer.writerows(self.history)
 
-    def save(self, epoch: int) -> None:
+    def save(
+        self,
+        epoch: int,
+        filename: str,
+        selection_criterion: str,
+        validation: Mapping[str, float],
+    ) -> None:
         trainable = {
             name for name, parameter in self.model.named_parameters() if parameter.requires_grad
         }
@@ -462,9 +503,12 @@ class Trainer:
                 "epoch": epoch,
                 "variant": self.variant,
                 "training_scheme": self.config["variants"][self.variant]["training_scheme"],
+                "upstream_commit": self.config["upstream_commit"],
+                "selection_criterion": selection_criterion,
+                "validation_metrics": dict(validation),
                 "state_dict": state,
             },
-            self.run_dir / "best.pt",
+            self.run_dir / filename,
         )
 
 
@@ -475,6 +519,7 @@ def train_one(
     device_name: str,
 ) -> Path:
     config = load_config(config_path)
+    upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
     variant_config = config["variants"][variant]
@@ -490,9 +535,12 @@ def train_one(
     run_dir = run_directory(config, variant, seed)
     run_dir.mkdir(parents=True, exist_ok=True)
     resolved = dict(config)
+    resolved["upstream_commit"] = upstream_commit
     resolved["active_variant"] = variant
     resolved["active_seed"] = seed
     resolved["active_training_scheme"] = variant_config["training_scheme"]
+    resolved["primary_checkpoint"] = PRIMARY_CHECKPOINT_NAME
+    resolved["secondary_checkpoint"] = CINDEX_CHECKPOINT_NAME
     resolved["primary_survival_window_rule"] = PRIMARY_SURVIVAL_WINDOW_RULE
     resolved["cohort_counts"] = {
         name: dataset.cohort_counts() for name, dataset in datasets.items()

@@ -15,6 +15,8 @@ import torch.nn.functional as F
 from .data import PRIMARY_SURVIVAL_WINDOW_RULE
 from .model import StagewiseDynamics
 from .train import (
+    PRIMARY_CHECKPOINT_NAME,
+    assert_upstream_commit,
     build_loaders,
     configure_upstream,
     encode_mri_stages,
@@ -215,6 +217,7 @@ def evaluate_one(
     device_name: str,
 ) -> dict[str, Any]:
     config = load_config(config_path)
+    upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
     variant_config = config["variants"][variant]
@@ -227,7 +230,14 @@ def evaluate_one(
     ).to(device)
     initial_encoder = encoder_trainable_state(model)
     run_dir = run_directory(config, variant, seed)
-    checkpoint = torch.load(run_dir / "best.pt", map_location="cpu", weights_only=False)
+    checkpoint = torch.load(
+        run_dir / PRIMARY_CHECKPOINT_NAME,
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert checkpoint["upstream_commit"] == upstream_commit, (
+        "Checkpoint CLARITY commit does not match the configured upstream commit"
+    )
     model.load_state_dict(checkpoint["state_dict"], strict=False)
     loaders, datasets = build_loaders(config, seed)
     rows, representation = recursive_predictions(model, loaders["test"], device)
@@ -257,6 +267,10 @@ def evaluate_one(
         "seed": seed,
         "training_scheme": checkpoint["training_scheme"],
         "checkpoint_epoch": int(checkpoint["epoch"]),
+        "checkpoint_file": PRIMARY_CHECKPOINT_NAME,
+        "checkpoint_selection_criterion": checkpoint["selection_criterion"],
+        "checkpoint_validation_metrics": checkpoint["validation_metrics"],
+        "upstream_commit": upstream_commit,
         "cohort_counts": {
             name: dataset.cohort_counts() for name, dataset in datasets.items()
         },
@@ -345,6 +359,11 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
     output: dict[str, Any] = {"primary": primary}
     if runs_by_variant:
         representative = next(iter(runs_by_variant.values()))[0]
+        output["primary_checkpoint"] = representative["checkpoint_file"]
+        output["primary_checkpoint_selection_criterion"] = representative[
+            "checkpoint_selection_criterion"
+        ]
+        output["upstream_commit"] = representative["upstream_commit"]
         output["cohort_counts"] = representative["cohort_counts"]
         output["primary_survival_window_rule"] = representative[
             "primary_survival_window_rule"
@@ -363,6 +382,21 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
         "# Pure Stage-wise RRT v3",
         "",
     ]
+    if "upstream_commit" in output:
+        lines.extend(
+            [
+                f"Upstream CLARITY commit: `{output['upstream_commit']}`.",
+                "",
+            ]
+        )
+    if "primary_checkpoint" in output:
+        lines.extend(
+            [
+                f"Primary checkpoint: `{output['primary_checkpoint']}` ",
+                f"(`{output['primary_checkpoint_selection_criterion']}`).",
+                "",
+            ]
+        )
     if "cohort_counts" in output:
         lines.extend(
             [
