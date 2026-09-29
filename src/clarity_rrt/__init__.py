@@ -1,3 +1,3 @@
-"""CLARITY RRT and dynamics-ensemble experiment package."""
+"""CLARITY stage-wise recursive transition experiment."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

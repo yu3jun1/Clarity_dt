@@ -1,118 +1,88 @@
-# CLARITY + RRT + Dynamics Ensemble
+# CLARITY Stage-wise Recursive Experiment
 
-这是基于官方 [DingTianxingjian/CLARITY](https://github.com/DingTianxingjian/CLARITY) 的可复现对比实验仓库。本仓库只管理新增实验代码、配置、固定 split、测试和运行脚本；CLARITY 源码作为本地外部依赖，不使用 Git submodule，也不纳入本仓库当前追踪。实验要求外部源码固定在提交 `dadb82241a24f5ec5e4e4dc994e3116fd4a9da04` 且工作树干净。
+当前仓库只实现 [CLARITY_RRT_stagewise_recursive_experiment_plan.md](CLARITY_RRT_stagewise_recursive_experiment_plan.md) 定义的实验：比较 CLARITY open-loop dynamics 与 stage-wise recursive transition learning，并分别测试单模型和 dynamics ensemble。
 
-实验严格包含四组：
+上一版实验的代码路径已经移除。旧方案和旧配置保存在 docs/legacy/、configs/legacy/，原有 12GB 运行产物原样保存在 outputs/legacy_open_loop_aux/。新版产物只写入 outputs/stagewise_recursive/，不会与旧结果混合。
 
-| 组 | Dynamics 成员 | RRT 权重 | 共享组件 |
-|---|---:|---:|---|
-| A | 1 | 0.0 | 官方 MRI/text encoder 与 SurvivalModule |
-| B | 1 | 0.1 | 同上 |
-| C | 3 | 0.0 | 成员间共享 encoder 与 SurvivalModule |
-| D | 3 | 0.1 | 成员间共享 encoder 与 SurvivalModule |
+## 实验定义
 
-A/B/C/D 使用同一固定患者划分、同一官方 all-pairs 主任务、相同训练种子 `42/43/44`。B/D 只增加第 2 步起的递归 latent L1；C/D 只复制 `LatentPredictor`。不增加递归 survival loss，不把 ensemble 成员展开成 Cox 风险集中的新患者。
+四组共用官方 MRI encoder、文本 encoder 和 SurvivalModule 架构。Ensemble 只复制 LatentPredictor，组内成员共享 encoder 和 outcome。
 
-## 当前数据与环境
+| 组 | Dynamics 训练 | λ_RRT | 成员数 |
+|---|---|---:|---:|
+| A | s0 + 完整治疗轨迹 + 总时间 → s3 | 0 | 1 |
+| B | s0→s1, s1→s2, s2→s3 | 0.1 | 1 |
+| C | 与 A 相同 | 0 | 3 |
+| D | 与 B 相同 | 0.1 | 3 |
 
-配置文件 [configs/experiment.yaml](configs/experiment.yaml) 已指向：
+每个样本是同一患者连续四次实际观察组成的 s0,s1,s2,s3。A/C 训练时只编码 s0 和 s3，不读取中间 latent；B/D 的 transition 基础损失使用真实阶段输入，RRT 项从第二步起使用各成员自己的预测继续 rollout：
 
-- MRI：`/data/tanyuejun/CLARITY/dataset/MU-Glioma-Post`
-- 临床时间线：`/data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json`
-- BrainIAC：`/home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt`
-- MedGemma：`/data/tanyuejun/model/medgemma-4b-it`
-- Python：Conda `py310`
+    L_A/C = L1(F(s0, full_plan, dt_total), s3)
 
-固定划分保存在 [data/splits.json](data/splits.json)：132 名符合条件的患者，train/validation/test 为 92/20/20 名；对应 472/83/107 个官方 pair。划分摘要 SHA-256 为 `6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e`。
+    L_B/D = mean_k L1(F(sk, ak, dtk), s{k+1})
+            + λ_RRT * mean_{k=2,3} L1(s_hat_k, s_k)
 
-数据、模型权重、checkpoint 和 `runs/` 均不会提交到 Git。
+四组均使用同一个官方 outcome 架构和相同的 H3 Cox/BCE 训练目标；没有递归 survival loss、per-horizon head、uncertainty loss 或其他新模块。
 
-正式实验在线训练 BrainIAC，但从共享的原始 float32 MRI 缓存 `/dev/shm/clarity_mri_cache` 读取输入。缓存内容与 NIfTI 经官方加载器得到的张量逐元素一致，不缓存会随训练更新的 BrainIAC latent。所有组统一使用官方 batch size 16、`num_workers=2`、`prefetch_factor=1` 且关闭 `pin_memory`；B/D 的递归链 MRI 仅在 RRT 从第 11 个 epoch 启用后按需加载。
+测试阶段不评价 direct prediction。所有组统一使用相邻阶段 action 和真实时间间隔，从 s0 递归部署到 H1/H2/H3。输出包括：
 
-## 验证与运行
+- H1/H2/H3 latent MSE 和 cosine similarity；
+- MSE(H3) - MSE(H1)；
+- H1/H2/H3 C-index 和 IPCW Brier@365；
+- C/D 的成员 latent 方差与 latent MSE 的 Pearson 相关；
+- C/D 在 25%/50%/75%/100% coverage 下的 selective rollout latent MSE。
 
-所有命令从仓库根目录执行。首次克隆本实验仓库后，独立准备官方源码（目录已被 `.gitignore` 忽略）：
+λ_RRT 消融在 B、D 上分别运行 0, 0.01, 0.05, 0.1，汇总 H3 latent MSE、C-index 和 Brier@365。
 
-```bash
-git clone https://github.com/DingTianxingjian/CLARITY.git third_party/CLARITY
-git -C third_party/CLARITY checkout dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
-```
+## 数据与配置
 
-然后执行：
+唯一当前配置是 [configs/stagewise_recursive.yaml](configs/stagewise_recursive.yaml)。它继续使用固定的患者级 train/validation/test split：
 
-```bash
-# 单元测试
-conda run -n py310 env PYTHONPATH="$PWD/src" python -m pytest -q
+    data/splits.json
 
-# 路径、依赖、CUDA、上游提交和 split 完整性预检
-conda run -n py310 env PYTHONPATH="$PWD/src" \
-  python -m clarity_rrt.preflight --config configs/experiment.yaml
+在当前数据上，满足四阶段 MRI、严格递增日期及 H1/H2/H3 生存标签要求的窗口数为 train/validation/test = 74/11/16。
 
-# 重新生成固定划分（正式实验开始后不要改变 seed 或重抽 test）
-conda run -n py310 env PYTHONPATH="$PWD/src" \
-  python -m clarity_rrt.data create-split \
-  --timeline-json /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json \
-  --mri-data-dir /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post \
-  --output data/splits.json --seed 20260927 --ratios 0.70 0.15 0.15
-```
+MRI 体数据直接从 `/dev/shm/clarity_mri_cache` 的 float32 `.npy` 缓存读取，不再在训练时重复解压 NIfTI。
 
-先按方案跑 A/seed42：
+官方 CLARITY 源码仍作为本地外部依赖放在 third_party/CLARITY，固定代码由当前本地 checkout 提供，不复制进本仓库。
 
-```bash
-bash scripts/run_one.sh A 42 4
-```
+## 运行
 
-确认基础复现后运行其他组。批量脚本默认允许使用物理 GPU 0–7，每张卡只运行一个本实验任务；空闲显存低于 40000 MiB 时会等待。可按需覆盖 GPU 列表、并发数或显存阈值：
+先运行轻量测试：
 
-```bash
-GPU_IDS="0 1 2 3 4 5 6 7" MAX_JOBS=8 MIN_FREE_MIB=40000 bash scripts/run_all.sh
-```
+    conda run -n py310 env PYTHONPATH="$PWD/src" python -m pytest -q
 
-`run_all.sh` 会先顺序构建或验证专属缓存，再启动 GPU worker。只有全部训练、评价和汇总成功完成后，它才删除 `/dev/shm/clarity_mri_cache`。失败或人工中止时缓存会保留以便复用；清理命令带有固定路径白名单和 manifest 校验，绝不会清理整个 `/dev/shm`。如需单独训练或重评，先运行：
+运行一组主实验（只允许 GPU 4–7）：
 
-需要在成功完成后继续保留专属缓存时，设置 `KEEP_MRI_CACHE=1`。批量恢复时，已有 `metrics.json` 的实验会直接跳过；已有完整 100 epoch history 及 `best.pt`/`last.pt` 的实验只重新评价，不会重新训练：
+    bash scripts/run_one.sh A 42 4
 
-```bash
-KEEP_MRI_CACHE=1 GPU_IDS="0 1 2 3 4 5 6 7" bash scripts/run_all.sh
-```
+同时运行 A–D 的 seed 42 并汇总：
 
-如需单独构建或验证缓存，运行：
+    bash scripts/run_single_seed.sh 42
 
-```bash
-conda run --no-capture-output -n py310 env PYTHONPATH="$PWD/src" \
-  python -m clarity_rrt.mri_cache build --config configs/experiment.yaml
-```
+确认单 seed 结果后，在 tmux 中补充 seed 43/44，再运行消融：
 
-单次训练会在 `runs/<variant>_seed<seed>/` 保存：
+    tmux new-session -d -s clarity_stagewise_followup 'bash scripts/run_pipeline.sh'
 
-```text
-config.yaml
-best.pt
-last.pt
-history.csv
-train.log
-predictions.csv
-evaluate.log
-metrics.json
-```
+在 GPU 4–7 上并行运行指定 seed 的 B/D λ_RRT 消融：
 
-`best.pt` 只按 warmup 后 validation pair C-index 选择。评价使用同一 checkpoint，生成 direct、共同递归 H1/H2/H3、C/D 的 H2 uncertainty 80% 覆盖诊断。主指标为固定方向 risk C-index 和使用训练参考删失分布的一年 IPCW Brier。
+    bash scripts/run_ablation.sh 42
 
-若训练已完成但需要单独重评：
+也可单独评价已有 checkpoint：
 
-```bash
-conda run -n py310 env PYTHONPATH="$PWD/src" \
-  python -m clarity_rrt.evaluate run --variant A --seed 42 --device cuda:0
+    PYTHONPATH="$PWD/src" conda run --no-capture-output -n py310 \
+      python -m clarity_rrt.evaluate run \
+      --config configs/stagewise_recursive.yaml \
+      --variant A --seed 42 --device cuda:0
 
-conda run -n py310 env PYTHONPATH="$PWD/src" \
-  python -m clarity_rrt.evaluate aggregate
-```
+新版目录结构：
 
-## 实现边界
-
-- [src/clarity_rrt/data.py](src/clarity_rrt/data.py)：固定患者划分、官方 pair 过滤、连续链附加。
-- [src/clarity_rrt/model.py](src/clarity_rrt/model.py)：官方路径等价包装、独立 dynamics 成员、成员内递归 rollout。
-- [src/clarity_rrt/train.py](src/clarity_rrt/train.py)：成员损失平均、官方 CF 保留、RRT、完整恢复 checkpoint。
-- [src/clarity_rrt/evaluate.py](src/clarity_rrt/evaluate.py)：direct/recursive 预测、C-index、IPCW Brier、uncertainty。
-
-跨组 raw latent MAE/MSE 只作为诊断，因为视觉 LoRA 会让各组表示空间不同。实验不评估治疗推荐，不作因果治疗获益解释。
+    outputs/
+    ├── legacy_open_loop_aux/       # 上一版结果，只归档不再读取
+    └── stagewise_recursive/
+        ├── primary/
+        │   └── A_seed42/
+        ├── ablation/
+        │   └── B_lambda0p01_seed42/
+        ├── summary.json
+        └── summary.md
