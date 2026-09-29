@@ -1,0 +1,87 @@
+{
+  "variant": "C",
+  "seed": 42,
+  "training_scheme": "open_loop",
+  "checkpoint_epoch": 35,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 0.9574071710759943,
+    "latent": 0.16636771776459433,
+    "cox": 0.8482591347260908,
+    "bce": 0.025964152575893837,
+    "cf": 0.0,
+    "c_index": 0.625
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1461010123603046,
+      "cosine_similarity": 0.924019243568182,
+      "c_index": 0.47058823529411764,
+      "brier365": 0.9172340175645668
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.14474733360111713,
+      "cosine_similarity": 0.9247408360242844,
+      "c_index": 0.4666666666666667,
+      "brier365": 1.055705607203992
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1555710076354444,
+      "cosine_similarity": 0.9195745214819908,
+      "c_index": 0.4,
+      "brier365": 0.44186191916771733
+    }
+  },
+  "representation_sanity": {
+    "observed_latent_variance": 0.060131434351205826,
+    "observed_transition_l2_mean": 36.85897445678711,
+    "encoder_trainable_parameter_rms_delta": 0.00555902374187082
+  },
+  "error_accumulation": 0.009469995275139809,
+  "uncertainty": {
+    "H1": {
+      "latent_disagreement_mean": 0.007994192477781326,
+      "latent_disagreement_error_pearson": -0.5106387461673657,
+      "survival_probability_disagreement_mean": 0.011541981257323641
+    },
+    "H2": {
+      "latent_disagreement_mean": 0.009565783897414804,
+      "latent_disagreement_error_pearson": 0.3256154353903211,
+      "survival_probability_disagreement_mean": 0.03674057857824664
+    },
+    "H3": {
+      "latent_disagreement_mean": 0.016488416062202305,
+      "latent_disagreement_error_pearson": 0.9827156059336257,
+      "survival_probability_disagreement_mean": 0.04450470403298823
+    }
+  }
+}
