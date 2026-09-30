@@ -24,11 +24,17 @@ def test_pure_rrt_v3_config_builds_upstream_args():
     assert args.lambda_bce == 1.0
     assert config["training"]["batch_size"] == 16
     assert config["training"]["evaluation_batch_size"] == 16
+    assert config["training"]["total_steps"] == 2400
+    assert config["training"]["warmup_steps"] == 240
+    assert config["training"]["validation_interval_steps"] == 24
+    assert config["training"]["cf_weight"] == 1.0
+    assert "epochs" not in config["training"]
+    assert "warmup_epochs" not in config["training"]
     assert args.seed == 42
     assert config["upstream_commit"] == UPSTREAM_COMMIT
     assert config["variants"] == FACTORIAL_VARIANTS
     assert_factorial_design(config)
-    assert config["output_root"] == "outputs/pure_rrt_v3_clarity_allpair"
+    assert config["output_root"] == "outputs/pure_rrt_v3_step2400"
     assert assert_upstream_commit(config) == UPSTREAM_COMMIT
 
 

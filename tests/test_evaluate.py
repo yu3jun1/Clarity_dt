@@ -1,6 +1,10 @@
 import pytest
 
-from clarity_rrt_v3.evaluate import summarize_runs, uncertainty_metrics
+from clarity_rrt_v3.evaluate import (
+    member_diagnostics,
+    summarize_runs,
+    uncertainty_metrics,
+)
 
 
 def test_uncertainty_reports_v3_secondary_metrics():
@@ -20,6 +24,38 @@ def test_uncertainty_reports_v3_secondary_metrics():
     assert result["H3"]["latent_disagreement_error_pearson"] == 1.0
     assert result["H1"]["latent_disagreement_mean"] == 1.5
     assert result["H2"]["survival_probability_disagreement_mean"] == pytest.approx(0.05)
+
+
+def test_member_diagnostics_reports_each_member_and_horizon():
+    rows = []
+    for horizon in (1, 2, 3):
+        rows.extend(
+            [
+                {
+                    "horizon": horizon,
+                    "member_latent_mse": [1.0, 3.0, 5.0],
+                    "member_cosine_similarity": [0.9, 0.7, 0.5],
+                },
+                {
+                    "horizon": horizon,
+                    "member_latent_mse": [3.0, 5.0, 7.0],
+                    "member_cosine_similarity": [0.7, 0.5, 0.3],
+                },
+            ]
+        )
+
+    result = member_diagnostics(rows)
+
+    assert result["H1"][0] == {
+        "member_index": 0,
+        "latent_mse": 2.0,
+        "cosine_similarity": pytest.approx(0.8),
+    }
+    assert result["H3"][2] == {
+        "member_index": 2,
+        "latent_mse": 6.0,
+        "cosine_similarity": pytest.approx(0.4),
+    }
 
 
 def test_cross_seed_summary_keeps_secondary_and_representation_metrics():
@@ -45,16 +81,35 @@ def test_cross_seed_summary_keeps_secondary_and_representation_metrics():
         }
         for horizon in (1, 2, 3)
     }
+    members = {
+        f"H{horizon}": [
+            {
+                "member_index": member,
+                "latent_mse": float(member + horizon),
+                "cosine_similarity": 0.9 - 0.1 * member,
+            }
+            for member in range(3)
+        ]
+        for horizon in (1, 2, 3)
+    }
     summary = summarize_runs(
         [
             {
+                "optimizer_steps": 2400,
+                "warmup_steps": 240,
+                "samples_seen": 35520,
+                "effective_dataset_passes": 480.0,
+                "checkpoint_optimizer_step": 1200,
                 "recursive": recursive,
                 "error_accumulation": 0.1,
                 "representation_sanity": representation,
                 "uncertainty": uncertainty,
+                "member_diagnostics": members,
             }
         ]
     )
     assert summary["H2_latent_disagreement_error_pearson"]["mean"] == 0.5
     assert summary["H3_survival_probability_disagreement_mean"]["mean"] == 0.05
     assert summary["observed_latent_variance"]["mean"] == 0.4
+    assert summary["optimizer_steps"]["mean"] == 2400
+    assert summary["H3_member_2_latent_mse"]["mean"] == 5.0

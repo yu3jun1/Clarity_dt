@@ -1,6 +1,6 @@
 upstream_root: third_party/CLARITY
 upstream_commit: dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
-output_root: outputs/pure_rrt_v3_clarity_allpair
+output_root: outputs/pure_rrt_v3_step2400
 
 data:
   timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
@@ -25,8 +25,9 @@ variants:
   D: {training_scheme: pure_recursive, ensemble_size: 3}
 
 training:
-  epochs: 100
-  warmup_epochs: 10
+  total_steps: 2400
+  warmup_steps: 240
+  validation_interval_steps: 24
   batch_size: 16
   evaluation_batch_size: 16
   num_workers: 2

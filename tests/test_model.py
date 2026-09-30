@@ -11,6 +11,7 @@ from clarity_rrt_v3.train import (
     CINDEX_CHECKPOINT_NAME,
     PRIMARY_CHECKPOINT_NAME,
     Trainer,
+    compute_training_budget,
     counterfactual_loss,
     mean_horizon_l1,
 )
@@ -140,7 +141,7 @@ def test_clarity_all_pair_step_uses_one_true_pre_state_pair(variant, ensemble_si
     trainer.config = {
         "variants": {variant: {"training_scheme": "clarity_all_pair"}},
         "training": {
-            "warmup_epochs": 0,
+            "warmup_steps": 0,
             "lambda_l1": 0.5,
             "lambda_cox": 1.0,
             "lambda_bce": 1.0,
@@ -161,7 +162,7 @@ def test_clarity_all_pair_step_uses_one_true_pre_state_pair(variant, ensemble_si
         "event": torch.tensor([1.0, 1.0]),
     }
 
-    total, values, risk = trainer.step(batch, epoch=1, compute_cf=True)
+    total, values, risk = trainer.step(batch, optimizer_step=1, compute_cf=True)
 
     assert total.ndim == 0
     assert set(values) == {"loss", "latent", "cox", "bce", "cf"}
@@ -275,28 +276,54 @@ class CountingScheduler:
 
 class CheckpointSelectionTrainer(Trainer):
     def __init__(self):
-        self.config = {"training": {"epochs": 4, "warmup_epochs": 1}}
+        self.config = {
+            "training": {
+                "total_steps": 4,
+                "warmup_steps": 1,
+                "validation_interval_steps": 1,
+            }
+        }
         self.scheduler = CountingScheduler()
         self.history = []
         self.best_val_loss = float("inf")
         self.best_c_index = -float("inf")
         self.saved = []
+        self.optimizer_steps = 0
+        self.samples_seen = 0
+        self.training_dataset_size = 1
+        self.training_budget = {
+            "optimizer_steps": 4,
+            "warmup_steps": 1,
+            "validation_interval_steps": 1,
+            "samples_seen": 4,
+            "effective_dataset_passes": 4.0,
+        }
+        self.loaders = {"train": [{"patient": ["P"]}]}
 
-    def epoch(self, epoch, training):
-        if training:
-            return {"loss": 10.0, "c_index": 0.0}
+    def training_update(self, batch, optimizer_step):
+        return {
+            "loss": 10.0,
+            "latent": 9.0,
+            "cox": 0.5,
+            "bce": 0.4,
+            "cf": 0.1,
+        }
+
+    def validation(self, optimizer_step):
         return {
             1: {"loss": 1.0, "c_index": 0.9},
             2: {"loss": 4.0, "c_index": 0.6},
             3: {"loss": 3.0, "c_index": 0.5},
             4: {"loss": 3.5, "c_index": 0.7},
-        }[epoch]
+        }[optimizer_step]
 
     def write_history(self):
         pass
 
-    def save(self, epoch, filename, selection_criterion, validation):
-        self.saved.append((epoch, filename, selection_criterion, dict(validation)))
+    def save(self, optimizer_step, filename, selection_criterion, validation):
+        self.saved.append(
+            (optimizer_step, filename, selection_criterion, dict(validation))
+        )
 
 
 def test_checkpoint_selection_uses_val_loss_for_primary_and_cindex_for_secondary():
@@ -304,8 +331,8 @@ def test_checkpoint_selection_uses_val_loss_for_primary_and_cindex_for_secondary
     trainer.fit()
 
     saved = [
-        (epoch, filename, criterion)
-        for epoch, filename, criterion, _ in trainer.saved
+        (optimizer_step, filename, criterion)
+        for optimizer_step, filename, criterion, _ in trainer.saved
     ]
     assert saved == [
         (2, PRIMARY_CHECKPOINT_NAME, "validation_total_loss"),
@@ -316,3 +343,41 @@ def test_checkpoint_selection_uses_val_loss_for_primary_and_cindex_for_secondary
     assert trainer.best_val_loss == 3.0
     assert trainer.best_c_index == 0.7
     assert trainer.scheduler.steps == 4
+    assert trainer.optimizer_steps == 4
+    assert trainer.samples_seen == 4
+
+
+class BudgetLoader:
+    def __init__(self, dataset_size, batch_size):
+        self.dataset = range(dataset_size)
+        self.batch_size = batch_size
+
+    def __len__(self):
+        return (len(self.dataset) + self.batch_size - 1) // self.batch_size
+
+
+@pytest.mark.parametrize(
+    ("dataset_size", "samples_seen", "effective_passes"),
+    [(382, 38200, 100.0), (74, 35520, 480.0)],
+)
+def test_training_budget_reports_samples_and_effective_passes(
+    dataset_size,
+    samples_seen,
+    effective_passes,
+):
+    config = {
+        "training": {
+            "total_steps": 2400,
+            "warmup_steps": 240,
+            "validation_interval_steps": 24,
+        }
+    }
+    budget = compute_training_budget(config, BudgetLoader(dataset_size, 16))
+
+    assert budget == {
+        "optimizer_steps": 2400,
+        "warmup_steps": 240,
+        "validation_interval_steps": 24,
+        "samples_seen": samples_seen,
+        "effective_dataset_passes": effective_passes,
+    }

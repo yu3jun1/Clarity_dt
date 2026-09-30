@@ -105,7 +105,6 @@ def upstream_args(config: Mapping[str, Any], seed: int) -> Namespace:
         brainiac_ckpt=model["brainiac_ckpt"],
         brainiac_tokens=int(model["brainiac_tokens"]),
         brainiac_lora_r=int(model["brainiac_lora_r"]),
-        num_epochs=int(training["epochs"]),
         lr=float(training["lr"]),
         text_lr=float(training["text_lr"]),
         text_proj_lr=float(training["text_proj_lr"]),
@@ -223,7 +222,7 @@ def build_optimizer(
     add_parameters(groups, model.mri_encoder.parameters(), float(training["vision_lr"]), 0.0)
     optimizer = AdamW(groups)
     scheduler = CosineAnnealingLR(
-        optimizer, T_max=int(training["epochs"]), eta_min=1e-6
+        optimizer, T_max=int(training["total_steps"]), eta_min=1e-6
     )
     return optimizer, scheduler
 
@@ -325,7 +324,32 @@ def run_directory(
     return Path(config["output_root"]) / "primary" / f"{variant}_seed{seed}"
 
 
+def compute_training_budget(
+    config: Mapping[str, Any],
+    train_loader: DataLoader,
+) -> dict[str, int | float]:
+    training = config["training"]
+    optimizer_steps = int(training["total_steps"])
+    dataset_size = len(train_loader.dataset)
+    batch_size = int(train_loader.batch_size)
+    steps_per_pass = len(train_loader)
+    complete_passes, remaining_steps = divmod(optimizer_steps, steps_per_pass)
+    samples_seen = (
+        complete_passes * dataset_size
+        + min(remaining_steps * batch_size, dataset_size)
+    )
+    return {
+        "optimizer_steps": optimizer_steps,
+        "warmup_steps": int(training["warmup_steps"]),
+        "validation_interval_steps": int(training["validation_interval_steps"]),
+        "samples_seen": samples_seen,
+        "effective_dataset_passes": samples_seen / dataset_size,
+    }
+
+
 class Trainer:
+    metric_names = ("loss", "latent", "cox", "bce", "cf")
+
     def __init__(
         self,
         config: Mapping[str, Any],
@@ -350,6 +374,10 @@ class Trainer:
         self.history: list[dict[str, float]] = []
         self.best_val_loss = float("inf")
         self.best_c_index = -float("inf")
+        self.optimizer_steps = 0
+        self.samples_seen = 0
+        self.training_budget = compute_training_budget(config, loaders["train"])
+        self.training_dataset_size = len(loaders["train"].dataset)
 
     @property
     def clarity_all_pair(self) -> bool:
@@ -361,7 +389,7 @@ class Trainer:
     def _all_pair_step(
         self,
         batch: Mapping[str, Any],
-        epoch: int,
+        optimizer_step: int,
         compute_cf: bool,
     ) -> tuple[torch.Tensor, dict[str, float], torch.Tensor]:
         initial = self.model.mri_encoder(batch["pre_mri"].to(self.device))
@@ -402,7 +430,7 @@ class Trainer:
             if compute_cf
             else latent.new_zeros(())
         )
-        if epoch <= int(training["warmup_epochs"]):
+        if optimizer_step <= int(training["warmup_steps"]):
             total = latent
         else:
             total = (
@@ -423,11 +451,11 @@ class Trainer:
     def step(
         self,
         batch: Mapping[str, Any],
-        epoch: int,
+        optimizer_step: int,
         compute_cf: bool,
     ) -> tuple[torch.Tensor, dict[str, float], torch.Tensor]:
         if self.clarity_all_pair:
-            return self._all_pair_step(batch, epoch, compute_cf)
+            return self._all_pair_step(batch, optimizer_step, compute_cf)
 
         mri = batch["mri"].to(self.device)
         deltas = batch["deltas"].to(self.device)
@@ -473,7 +501,7 @@ class Trainer:
             if compute_cf
             else latent.new_zeros(())
         )
-        if epoch <= int(training["warmup_epochs"]):
+        if optimizer_step <= int(training["warmup_steps"]):
             total = latent
         else:
             total = (
@@ -491,27 +519,37 @@ class Trainer:
         }
         return total, values, risks[:, :, 0].mean(dim=0).detach()
 
-    def epoch(self, epoch: int, training: bool) -> dict[str, float]:
-        self.model.train(training)
-        loader = self.loaders["train" if training else "validation"]
-        records = {name: [] for name in ("loss", "latent", "cox", "bce", "cf")}
+    def training_update(
+        self,
+        batch: Mapping[str, Any],
+        optimizer_step: int,
+    ) -> dict[str, float]:
+        self.model.train(True)
+        total, values, _ = self.step(batch, optimizer_step, compute_cf=True)
+        self.optimizer.zero_grad(set_to_none=True)
+        total.backward()
+        torch.nn.utils.clip_grad_norm_(
+            self.model.parameters(),
+            float(self.config["training"]["grad_clip_norm"]),
+        )
+        self.optimizer.step()
+        return values
+
+    def validation(self, optimizer_step: int) -> dict[str, float]:
+        self.model.train(False)
+        records = {name: [] for name in self.metric_names}
         batch_sizes = []
         risks = []
         times = []
         events = []
         primary_windows = []
-        context = torch.enable_grad() if training else torch.no_grad()
-        with context:
-            for batch in loader:
-                total, values, risk = self.step(batch, epoch, compute_cf=training)
-                if training:
-                    self.optimizer.zero_grad(set_to_none=True)
-                    total.backward()
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model.parameters(),
-                        float(self.config["training"]["grad_clip_norm"]),
-                    )
-                    self.optimizer.step()
+        with torch.no_grad():
+            for batch in self.loaders["validation"]:
+                _, values, risk = self.step(
+                    batch,
+                    optimizer_step,
+                    compute_cf=False,
+                )
                 for name, value in values.items():
                     records[name].append(value)
                 batch_sizes.append(len(batch["patient"]))
@@ -538,21 +576,58 @@ class Trainer:
         return result
 
     def fit(self) -> None:
-        epochs = int(self.config["training"]["epochs"])
-        for epoch in range(1, epochs + 1):
-            train = self.epoch(epoch, training=True)
-            validation = self.epoch(epoch, training=False)
+        training = self.config["training"]
+        total_steps = int(training["total_steps"])
+        warmup_steps = int(training["warmup_steps"])
+        validation_interval = int(training["validation_interval_steps"])
+        train_loader = self.loaders["train"]
+        train_iterator = iter(train_loader)
+        records = {name: [] for name in self.metric_names}
+        batch_sizes: list[int] = []
+
+        for optimizer_step in range(1, total_steps + 1):
+            try:
+                batch = next(train_iterator)
+            except StopIteration:
+                train_iterator = iter(train_loader)
+                batch = next(train_iterator)
+
+            values = self.training_update(batch, optimizer_step)
             self.scheduler.step()
-            row: dict[str, float] = {"epoch": float(epoch)}
+            self.optimizer_steps = optimizer_step
+            batch_size = len(batch["patient"])
+            self.samples_seen += batch_size
+            batch_sizes.append(batch_size)
+            for name, value in values.items():
+                records[name].append(value)
+
+            if optimizer_step % validation_interval != 0 and optimizer_step < total_steps:
+                continue
+
+            train = {
+                name: float(np.average(values, weights=batch_sizes))
+                for name, values in records.items()
+            }
+            validation = self.validation(optimizer_step)
+            row: dict[str, float] = {
+                "optimizer_step": float(optimizer_step),
+                "samples_seen": float(self.samples_seen),
+                "effective_dataset_passes": (
+                    self.samples_seen / self.training_dataset_size
+                ),
+            }
             row.update({f"train_{name}": value for name, value in train.items()})
-            row.update({f"validation_{name}": value for name, value in validation.items()})
+            row.update(
+                {f"validation_{name}": value for name, value in validation.items()}
+            )
             self.history.append(row)
             self.write_history()
-            if epoch > int(self.config["training"]["warmup_epochs"]):
+
+            if optimizer_step > warmup_steps:
                 if validation["loss"] < self.best_val_loss:
                     self.best_val_loss = validation["loss"]
                     self.save(
-                        epoch,
+                        optimizer_step,
                         PRIMARY_CHECKPOINT_NAME,
                         "validation_total_loss",
                         validation,
@@ -560,28 +635,37 @@ class Trainer:
                 if validation["c_index"] > self.best_c_index:
                     self.best_c_index = validation["c_index"]
                     self.save(
-                        epoch,
+                        optimizer_step,
                         CINDEX_CHECKPOINT_NAME,
                         "validation_patient_level_c_index",
                         validation,
                     )
             print(json.dumps(row, sort_keys=True), flush=True)
+            records = {name: [] for name in self.metric_names}
+            batch_sizes = []
+
+        assert self.optimizer_steps == int(self.training_budget["optimizer_steps"])
+        assert self.samples_seen == int(self.training_budget["samples_seen"])
 
     def write_history(self) -> None:
-        with (self.run_dir / "history.csv").open("w", newline="", encoding="utf-8") as handle:
+        with (self.run_dir / "history.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as handle:
             writer = csv.DictWriter(handle, fieldnames=list(self.history[0]))
             writer.writeheader()
             writer.writerows(self.history)
 
     def save(
         self,
-        epoch: int,
+        optimizer_step: int,
         filename: str,
         selection_criterion: str,
         validation: Mapping[str, float],
     ) -> None:
         trainable = {
-            name for name, parameter in self.model.named_parameters() if parameter.requires_grad
+            name
+            for name, parameter in self.model.named_parameters()
+            if parameter.requires_grad
         }
         state = {
             name: value.detach().cpu()
@@ -590,9 +674,16 @@ class Trainer:
         }
         torch.save(
             {
-                "epoch": epoch,
+                "optimizer_step": optimizer_step,
+                "samples_seen": self.samples_seen,
+                "effective_dataset_passes": (
+                    self.samples_seen / self.training_dataset_size
+                ),
+                "training_budget": dict(self.training_budget),
                 "variant": self.variant,
-                "training_scheme": self.config["variants"][self.variant]["training_scheme"],
+                "training_scheme": self.config["variants"][self.variant][
+                    "training_scheme"
+                ],
                 "upstream_commit": self.config["upstream_commit"],
                 "selection_criterion": selection_criterion,
                 "validation_metrics": dict(validation),
@@ -630,6 +721,7 @@ def train_one(
     resolved["active_variant"] = variant
     resolved["active_seed"] = seed
     resolved["active_training_scheme"] = variant_config["training_scheme"]
+    resolved["training_budget"] = compute_training_budget(config, loaders["train"])
     resolved["primary_checkpoint"] = PRIMARY_CHECKPOINT_NAME
     resolved["secondary_checkpoint"] = CINDEX_CHECKPOINT_NAME
     resolved["primary_survival_window_rule"] = PRIMARY_SURVIVAL_WINDOW_RULE

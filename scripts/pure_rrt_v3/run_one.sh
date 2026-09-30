@@ -10,7 +10,7 @@ VARIANT="$1"
 SEED="$2"
 GPU_ID="$3"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-RUN_DIR="$ROOT/outputs/pure_rrt_v3_clarity_allpair/primary/${VARIANT}_seed${SEED}"
+RUN_DIR="$ROOT/outputs/pure_rrt_v3_step2400/primary/${VARIANT}_seed${SEED}"
 
 case "$VARIANT" in
   A|B|C|D) ;;

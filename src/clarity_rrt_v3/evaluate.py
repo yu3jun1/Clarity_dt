@@ -116,6 +116,13 @@ def recursive_predictions(
             targets.flatten(2),
             dim=-1,
         )
+        expanded_targets = targets.unsqueeze(0).expand_as(member_states)
+        member_mse = ((member_states - expanded_targets) ** 2).mean(dim=(-1, -2))
+        member_cosine = F.cosine_similarity(
+            member_states.flatten(3),
+            expanded_targets.flatten(3),
+            dim=-1,
+        )
         latent_disagreement = member_states.var(
             dim=0, unbiased=False
         ).mean(dim=(-1, -2))
@@ -137,6 +144,14 @@ def recursive_predictions(
                         "horizon": horizon + 1,
                         "latent_mse": float(mse[sample, horizon].cpu()),
                         "cosine_similarity": float(cosine[sample, horizon].cpu()),
+                        "member_latent_mse": [
+                            float(member_mse[member, sample, horizon].cpu())
+                            for member in range(member_states.shape[0])
+                        ],
+                        "member_cosine_similarity": [
+                            float(member_cosine[member, sample, horizon].cpu())
+                            for member in range(member_states.shape[0])
+                        ],
                         "latent_disagreement": float(
                             latent_disagreement[sample, horizon].cpu()
                         ),
@@ -211,6 +226,29 @@ def uncertainty_metrics(
     return result
 
 
+def member_diagnostics(
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, list[dict[str, float | int]]]:
+    result: dict[str, list[dict[str, float | int]]] = {}
+    for horizon in (1, 2, 3):
+        selected = [row for row in rows if row["horizon"] == horizon]
+        member_mse = np.asarray(
+            [row["member_latent_mse"] for row in selected], dtype=float
+        )
+        member_cosine = np.asarray(
+            [row["member_cosine_similarity"] for row in selected], dtype=float
+        )
+        result[f"H{horizon}"] = [
+            {
+                "member_index": member,
+                "latent_mse": float(member_mse[:, member].mean()),
+                "cosine_similarity": float(member_cosine[:, member].mean()),
+            }
+            for member in range(member_mse.shape[1])
+        ]
+    return result
+
+
 def evaluate_one(
     config_path: str | Path,
     variant: str,
@@ -264,11 +302,22 @@ def evaluate_one(
             training_reference(datasets["train"], horizon),
             concordance,
         )
+    training_budget = checkpoint["training_budget"]
     metrics: dict[str, Any] = {
         "variant": variant,
         "seed": seed,
         "training_scheme": checkpoint["training_scheme"],
-        "checkpoint_epoch": int(checkpoint["epoch"]),
+        "optimizer_steps": int(training_budget["optimizer_steps"]),
+        "warmup_steps": int(training_budget["warmup_steps"]),
+        "samples_seen": int(training_budget["samples_seen"]),
+        "effective_dataset_passes": float(
+            training_budget["effective_dataset_passes"]
+        ),
+        "checkpoint_optimizer_step": int(checkpoint["optimizer_step"]),
+        "checkpoint_samples_seen": int(checkpoint["samples_seen"]),
+        "checkpoint_effective_dataset_passes": float(
+            checkpoint["effective_dataset_passes"]
+        ),
         "checkpoint_file": PRIMARY_CHECKPOINT_NAME,
         "checkpoint_selection_criterion": checkpoint["selection_criterion"],
         "checkpoint_validation_metrics": checkpoint["validation_metrics"],
@@ -290,6 +339,7 @@ def evaluate_one(
         }
     if int(variant_config["ensemble_size"]) > 1:
         metrics["uncertainty"] = uncertainty_metrics(rows)
+        metrics["member_diagnostics"] = member_diagnostics(rows)
     (run_dir / "metrics.json").write_text(
         json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
     )
@@ -319,6 +369,14 @@ def collect_runs(
 
 def summarize_runs(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     summary: dict[str, Any] = {}
+    for metric in (
+        "optimizer_steps",
+        "warmup_steps",
+        "samples_seen",
+        "effective_dataset_passes",
+        "checkpoint_optimizer_step",
+    ):
+        summary[metric] = statistics([float(run[metric]) for run in runs])
     for horizon in (1, 2, 3):
         key = f"H{horizon}"
         for metric in ("latent_mse", "cosine_similarity", "c_index", "brier365"):
@@ -350,11 +408,26 @@ def summarize_runs(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
                         for run in runs
                     ]
                 )
+    if "member_diagnostics" in runs[0]:
+        member_count = len(runs[0]["member_diagnostics"]["H1"])
+        for horizon in (1, 2, 3):
+            key = f"H{horizon}"
+            for member in range(member_count):
+                for metric in ("latent_mse", "cosine_similarity"):
+                    summary[f"{key}_member_{member}_{metric}"] = statistics(
+                        [
+                            float(
+                                run["member_diagnostics"][key][member][metric]
+                            )
+                            for run in runs
+                        ]
+                    )
     return summary
 
 
 def aggregate(config_path: str | Path) -> dict[str, Any]:
     config = load_config(config_path)
+    assert_factorial_design(config)
     runs_by_variant = {
         variant: runs
         for variant in "ABCD"
@@ -363,7 +436,16 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
     primary = {
         variant: summarize_runs(runs) for variant, runs in runs_by_variant.items()
     }
-    output: dict[str, Any] = {"primary": primary}
+    output: dict[str, Any] = {
+        "training_control": {
+            "total_steps": int(config["training"]["total_steps"]),
+            "warmup_steps": int(config["training"]["warmup_steps"]),
+            "validation_interval_steps": int(
+                config["training"]["validation_interval_steps"]
+            ),
+        },
+        "primary": primary,
+    }
     if runs_by_variant:
         representative = next(iter(runs_by_variant.values()))[0]
         output["primary_checkpoint"] = representative["checkpoint_file"]
@@ -406,6 +488,27 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
                 "",
             ]
         )
+    if primary:
+        lines.extend(
+            [
+                "## Training budget",
+                "",
+                "| Group | Optimizer steps | Warmup steps | Samples seen | Effective dataset passes | Selected checkpoint step |",
+                "|---|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for variant in "ABCD":
+            if variant not in primary:
+                continue
+            block = primary[variant]
+            lines.append(
+                f"| {variant} | {value(block, 'optimizer_steps')} | "
+                f"{value(block, 'warmup_steps')} | "
+                f"{value(block, 'samples_seen')} | "
+                f"{value(block, 'effective_dataset_passes')} | "
+                f"{value(block, 'checkpoint_optimizer_step')} |"
+            )
+        lines.append("")
     if "cohort_counts" in output:
         lines.extend(
             [
@@ -427,10 +530,10 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
         lines.append("")
     lines.extend(
         [
-        "## Table 1 — Recursive Latent Dynamics",
-        "",
-        "| Group | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+            "## Table 1 — Recursive Latent Dynamics",
+            "",
+            "| Group | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
+            "|---|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for variant in "ABCD":
@@ -479,6 +582,29 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             f"{value(block, 'H3_latent_disagreement_error_pearson')} | "
             f"{value(block, 'H3_survival_probability_disagreement_mean')} |"
         )
+    lines.extend(
+        [
+            "",
+            "## Ensemble member-level dynamics",
+            "",
+            "| Group | Member | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for variant in ("C", "D"):
+        if variant not in primary:
+            continue
+        block = primary[variant]
+        for member in range(int(config["variants"][variant]["ensemble_size"])):
+            lines.append(
+                f"| {variant} | {member} | "
+                f"{value(block, f'H1_member_{member}_latent_mse')} | "
+                f"{value(block, f'H2_member_{member}_latent_mse')} | "
+                f"{value(block, f'H3_member_{member}_latent_mse')} | "
+                f"{value(block, f'H1_member_{member}_cosine_similarity')} | "
+                f"{value(block, f'H2_member_{member}_cosine_similarity')} | "
+                f"{value(block, f'H3_member_{member}_cosine_similarity')} |"
+            )
     lines.extend(
         [
             "",
