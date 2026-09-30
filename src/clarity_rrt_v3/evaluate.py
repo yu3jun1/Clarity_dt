@@ -16,6 +16,7 @@ from .data import PRIMARY_SURVIVAL_WINDOW_RULE
 from .model import StagewiseDynamics
 from .train import (
     PRIMARY_CHECKPOINT_NAME,
+    assert_factorial_design,
     assert_upstream_commit,
     build_loaders,
     configure_upstream,
@@ -217,6 +218,7 @@ def evaluate_one(
     device_name: str,
 ) -> dict[str, Any]:
     config = load_config(config_path)
+    assert_factorial_design(config)
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)

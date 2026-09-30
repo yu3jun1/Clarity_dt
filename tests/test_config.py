@@ -1,6 +1,14 @@
 from pathlib import Path
 
-from clarity_rrt_v3.train import assert_upstream_commit, load_config, upstream_args
+import pytest
+
+from clarity_rrt_v3.train import (
+    FACTORIAL_VARIANTS,
+    assert_factorial_design,
+    assert_upstream_commit,
+    load_config,
+    upstream_args,
+)
 
 
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "configs" / "pure_rrt_v3.yaml"
@@ -18,6 +26,15 @@ def test_pure_rrt_v3_config_builds_upstream_args():
     assert config["training"]["evaluation_batch_size"] == 16
     assert args.seed == 42
     assert config["upstream_commit"] == UPSTREAM_COMMIT
-    assert config["variants"]["A"]["training_scheme"] == "clarity_all_pair"
+    assert config["variants"] == FACTORIAL_VARIANTS
+    assert_factorial_design(config)
     assert config["output_root"] == "outputs/pure_rrt_v3_clarity_allpair"
     assert assert_upstream_commit(config) == UPSTREAM_COMMIT
+
+
+def test_factorial_definition_rejects_variant_drift():
+    config = load_config(CONFIG_PATH)
+    config["variants"]["C"]["training_scheme"] = "open_loop"
+
+    with pytest.raises(AssertionError, match="frozen 2x2"):
+        assert_factorial_design(config)

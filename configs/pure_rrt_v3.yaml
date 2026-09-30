@@ -21,7 +21,7 @@ model:
 variants:
   A: {training_scheme: clarity_all_pair, ensemble_size: 1}
   B: {training_scheme: pure_recursive, ensemble_size: 1}
-  C: {training_scheme: open_loop, ensemble_size: 3}
+  C: {training_scheme: clarity_all_pair, ensemble_size: 3}
   D: {training_scheme: pure_recursive, ensemble_size: 3}
 
 training:

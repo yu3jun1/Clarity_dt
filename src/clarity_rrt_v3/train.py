@@ -1,4 +1,4 @@
-"""Train CLARITY all-pairs, endpoint, and pure recursive RRT groups."""
+"""Train the frozen CLARITY all-pair vs pure recursive 2x2 experiment."""
 
 from __future__ import annotations
 
@@ -34,11 +34,24 @@ from .model import StagewiseDynamics
 
 PRIMARY_CHECKPOINT_NAME = "best_val_loss.pt"
 CINDEX_CHECKPOINT_NAME = "best_val_cindex.pt"
+FACTORIAL_VARIANTS = {
+    "A": {"training_scheme": "clarity_all_pair", "ensemble_size": 1},
+    "B": {"training_scheme": "pure_recursive", "ensemble_size": 1},
+    "C": {"training_scheme": "clarity_all_pair", "ensemble_size": 3},
+    "D": {"training_scheme": "pure_recursive", "ensemble_size": 3},
+}
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
     with Path(path).open("r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
+
+
+def assert_factorial_design(config: Mapping[str, Any]) -> None:
+    assert config["variants"] == FACTORIAL_VARIANTS, (
+        "The v3 experiment definition must remain the frozen 2x2 "
+        "all-pair/recursive x single/ensemble design"
+    )
 
 
 def assert_upstream_commit(config: Mapping[str, Any]) -> str:
@@ -345,10 +358,6 @@ class Trainer:
             == "clarity_all_pair"
         )
 
-    @property
-    def pure_recursive(self) -> bool:
-        return self.config["variants"][self.variant]["training_scheme"] == "pure_recursive"
-
     def _all_pair_step(
         self,
         batch: Mapping[str, Any],
@@ -428,35 +437,19 @@ class Trainer:
             [batch["full_text"]], batch["clinical_text"]
         )
 
-        if self.pure_recursive:
-            states = encode_mri_stages(self.model, mri, (0, 1, 2, 3))
-            targets = states[:, 1:].detach()
-            step_conditions = self.model.encode_conditions(
-                batch["step_text"], batch["clinical_text"]
-            )
-            rollout = self.model.rollout(states[:, 0], step_conditions, deltas)
-            latent = mean_horizon_l1(rollout, targets)
-            cf_states = rollout
-            cf_conditions = step_conditions
-            cf_deltas = deltas
-            cf_texts = batch["step_text"]
-            terminal = rollout[:, :, -1:]
-            initial = states[:, 0]
-        else:
-            endpoints = encode_mri_stages(self.model, mri, (0, 3))
-            initial = endpoints[:, 0]
-            target = endpoints[:, 1].detach()
-            direct = self.model.direct(initial, full_condition[:, 0], deltas.sum(dim=1))
-            latent = F.l1_loss(
-                direct,
-                target.unsqueeze(0).expand(self.model.ensemble_size, -1, -1, -1),
-            )
-            terminal = direct.unsqueeze(2)
-
-            cf_states = terminal
-            cf_conditions = full_condition
-            cf_deltas = deltas.sum(dim=1, keepdim=True)
-            cf_texts = [batch["full_text"]]
+        states = encode_mri_stages(self.model, mri, (0, 1, 2, 3))
+        targets = states[:, 1:].detach()
+        step_conditions = self.model.encode_conditions(
+            batch["step_text"], batch["clinical_text"]
+        )
+        rollout = self.model.rollout(states[:, 0], step_conditions, deltas)
+        latent = mean_horizon_l1(rollout, targets)
+        cf_states = rollout
+        cf_conditions = step_conditions
+        cf_deltas = deltas
+        cf_texts = batch["step_text"]
+        terminal = rollout[:, :, -1:]
+        initial = states[:, 0]
 
         risks, logits = self.model.survival(initial, terminal, full_condition)
         cox, bce = outcome_loss(
@@ -616,6 +609,7 @@ def train_one(
     device_name: str,
 ) -> Path:
     config = load_config(config_path)
+    assert_factorial_design(config)
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)

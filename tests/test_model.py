@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 import torch
 from torch import nn
 
@@ -121,22 +122,23 @@ def inputs():
     return states, conditions, deltas
 
 
-def test_direct_path_uses_only_initial_state_and_full_plan():
+def test_direct_path_uses_true_pre_state_for_single_pair():
     model = StagewiseDynamics(TinyClarity(), ensemble_size=1, seed=42)
     states, conditions, deltas = inputs()
-    output = model.direct(states[:, 0], conditions[:, -1], deltas.sum(dim=1))
+    output = model.direct(states[:, 0], conditions[:, 0], deltas[:, 0])
     assert output.shape == (1, 2, 5, 3)
     torch.testing.assert_close(model.predictors[0].calls[0], states[:, 0])
 
 
-def test_clarity_all_pair_step_uses_one_true_pre_state_pair():
-    model = StagewiseDynamics(TinyClarity(), ensemble_size=1, seed=42)
+@pytest.mark.parametrize(("variant", "ensemble_size"), [("A", 1), ("C", 3)])
+def test_clarity_all_pair_step_uses_one_true_pre_state_pair(variant, ensemble_size):
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=ensemble_size, seed=42)
     trainer = object.__new__(Trainer)
     trainer.model = model
     trainer.device = torch.device("cpu")
-    trainer.variant = "A"
+    trainer.variant = variant
     trainer.config = {
-        "variants": {"A": {"training_scheme": "clarity_all_pair"}},
+        "variants": {variant: {"training_scheme": "clarity_all_pair"}},
         "training": {
             "warmup_epochs": 0,
             "lambda_l1": 0.5,
@@ -164,13 +166,12 @@ def test_clarity_all_pair_step_uses_one_true_pre_state_pair():
     assert total.ndim == 0
     assert set(values) == {"loss", "latent", "cox", "bce", "cf"}
     assert risk.shape == (2,)
-    assert len(model.predictors[0].calls) == 1
-    torch.testing.assert_close(model.predictors[0].calls[0], batch["pre_mri"])
-    assert len(model.clarity.cf_calls) == 1
-    torch.testing.assert_close(
-        model.clarity.cf_calls[0]["pre_latent"],
-        batch["pre_mri"],
-    )
+    assert all(len(predictor.calls) == 1 for predictor in model.predictors)
+    for predictor in model.predictors:
+        torch.testing.assert_close(predictor.calls[0], batch["pre_mri"])
+    assert len(model.clarity.cf_calls) == ensemble_size
+    for call in model.clarity.cf_calls:
+        torch.testing.assert_close(call["pre_latent"], batch["pre_mri"])
 
 
 def test_recursive_loss_weights_all_three_horizons_equally():
@@ -180,7 +181,7 @@ def test_recursive_loss_weights_all_three_horizons_equally():
     torch.testing.assert_close(loss, torch.tensor(3.0))
 
 
-def test_open_loop_counterfactual_loss_uses_full_plan_condition():
+def test_all_pair_counterfactual_loss_uses_pair_condition():
     model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
     initial = torch.zeros(4, 5, 3)
     member_states = torch.zeros(2, 4, 1, 5, 3)
