@@ -34,12 +34,17 @@ from .model import StagewiseDynamics
 
 PRIMARY_CHECKPOINT_NAME = "best_val_loss.pt"
 CINDEX_CHECKPOINT_NAME = "best_val_cindex.pt"
-FACTORIAL_VARIANTS = {
+MAIN_FACTORIAL_VARIANTS = {
     "A": {"training_scheme": "clarity_all_pair", "ensemble_size": 1},
     "B": {"training_scheme": "pure_recursive", "ensemble_size": 1},
     "C": {"training_scheme": "clarity_all_pair", "ensemble_size": 3},
     "D": {"training_scheme": "pure_recursive", "ensemble_size": 3},
 }
+TF_ABLATION_VARIANTS = {
+    "E": {"training_scheme": "teacher_forced_stagewise", "ensemble_size": 1},
+}
+# Backward-compatible public name used by the frozen main-factorial tests.
+FACTORIAL_VARIANTS = MAIN_FACTORIAL_VARIANTS
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
@@ -48,10 +53,26 @@ def load_config(path: str | Path) -> dict[str, Any]:
 
 
 def assert_factorial_design(config: Mapping[str, Any]) -> None:
-    assert config["variants"] == FACTORIAL_VARIANTS, (
+    assert (
+        config.get("experiment_kind", "main_factorial") == "main_factorial"
+        and config["variants"] == MAIN_FACTORIAL_VARIANTS
+    ), (
         "The v3 experiment definition must remain the frozen 2x2 "
         "all-pair/recursive x single/ensemble design"
     )
+
+
+def assert_experiment_design(config: Mapping[str, Any]) -> None:
+    kind = config.get("experiment_kind", "main_factorial")
+    if kind == "main_factorial":
+        assert_factorial_design(config)
+    elif kind == "teacher_forced_stagewise_ablation":
+        assert config["variants"] == TF_ABLATION_VARIANTS, (
+            "The teacher-forced stage-wise ablation must contain only the "
+            "single-predictor E variant"
+        )
+    else:
+        raise AssertionError(f"Unknown experiment kind: {kind}")
 
 
 def assert_upstream_commit(config: Mapping[str, Any]) -> str:
@@ -257,6 +278,7 @@ def counterfactual_loss(
     deltas: torch.Tensor,
     treatment_texts: Sequence[Sequence[str]],
     margin: float,
+    pre_states: torch.Tensor | None = None,
 ) -> torch.Tensor:
     categories = [
         [extract_treatment_category(text) for text in stage_texts]
@@ -264,8 +286,15 @@ def counterfactual_loss(
     ]
     losses = []
     for member, predictor in enumerate(model.predictors):
-        previous = initial
         for stage, stage_categories in enumerate(categories):
+            if pre_states is None:
+                previous = (
+                    initial
+                    if stage == 0
+                    else member_states[member, :, stage - 1]
+                )
+            else:
+                previous = pre_states[:, stage]
             prediction = member_states[member, :, stage]
             losses.append(
                 model.clarity.drug_swap_diversity_loss(
@@ -278,7 +307,6 @@ def counterfactual_loss(
                     cos_margin=margin,
                 )
             )
-            previous = prediction
     return torch.stack(losses).mean()
 
 
@@ -381,10 +409,11 @@ class Trainer:
 
     @property
     def clarity_all_pair(self) -> bool:
-        return (
-            self.config["variants"][self.variant]["training_scheme"]
-            == "clarity_all_pair"
-        )
+        return self.training_scheme == "clarity_all_pair"
+
+    @property
+    def training_scheme(self) -> str:
+        return str(self.config["variants"][self.variant]["training_scheme"])
 
     def _all_pair_step(
         self,
@@ -470,13 +499,33 @@ class Trainer:
         step_conditions = self.model.encode_conditions(
             batch["step_text"], batch["clinical_text"]
         )
-        rollout = self.model.rollout(states[:, 0], step_conditions, deltas)
-        latent = mean_horizon_l1(rollout, targets)
-        cf_states = rollout
+        if self.training_scheme == "pure_recursive":
+            predictions = self.model.rollout(states[:, 0], step_conditions, deltas)
+            cf_pre_states = None
+        elif self.training_scheme == "teacher_forced_stagewise":
+            teacher_inputs = torch.stack(
+                (
+                    states[:, 0],
+                    states[:, 1].detach(),
+                    states[:, 2].detach(),
+                ),
+                dim=1,
+            )
+            predictions = self.model.teacher_forced(
+                teacher_inputs,
+                step_conditions,
+                deltas,
+            )
+            cf_pre_states = teacher_inputs
+        else:
+            raise AssertionError(f"Unknown training scheme: {self.training_scheme}")
+
+        latent = mean_horizon_l1(predictions, targets)
+        cf_states = predictions
         cf_conditions = step_conditions
         cf_deltas = deltas
         cf_texts = batch["step_text"]
-        terminal = rollout[:, :, -1:]
+        terminal = predictions[:, :, -1:]
         initial = states[:, 0]
 
         risks, logits = self.model.survival(initial, terminal, full_condition)
@@ -497,6 +546,7 @@ class Trainer:
                 cf_deltas,
                 cf_texts,
                 float(training["cf_cos_margin"]),
+                pre_states=cf_pre_states,
             )
             if compute_cf
             else latent.new_zeros(())
@@ -700,7 +750,7 @@ def train_one(
     device_name: str,
 ) -> Path:
     config = load_config(config_path)
-    assert_factorial_design(config)
+    assert_experiment_design(config)
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
@@ -754,7 +804,7 @@ def train_one(
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--config", default="configs/pure_rrt_v3.yaml")
-    result.add_argument("--variant", required=True, choices=list("ABCD"))
+    result.add_argument("--variant", required=True, choices=list("ABCDE"))
     result.add_argument("--seed", required=True, type=int)
     result.add_argument("--device", default="cuda:0")
     return result

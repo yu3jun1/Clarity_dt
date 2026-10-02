@@ -182,6 +182,100 @@ def test_recursive_loss_weights_all_three_horizons_equally():
     torch.testing.assert_close(loss, torch.tensor(3.0))
 
 
+def test_teacher_forced_uses_true_pre_states_without_recursive_feedback():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
+    states, conditions, deltas = inputs()
+
+    output = model.teacher_forced(states[:, :3], conditions, deltas)
+
+    assert output.shape == (2, 2, 3, 5, 3)
+    for predictor in model.predictors:
+        for stage in range(3):
+            torch.testing.assert_close(predictor.calls[stage], states[:, stage])
+
+
+def test_teacher_forced_trainer_stops_input_gradient_for_s1_and_s2():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=1, seed=42)
+    trainer = object.__new__(Trainer)
+    trainer.model = model
+    trainer.device = torch.device("cpu")
+    trainer.variant = "E"
+    trainer.config = {
+        "variants": {
+            "E": {
+                "training_scheme": "teacher_forced_stagewise",
+                "ensemble_size": 1,
+            }
+        },
+        "training": {
+            "warmup_steps": 240,
+            "lambda_l1": 0.5,
+            "lambda_cox": 1.0,
+            "lambda_bce": 1.0,
+            "cf_weight": 1.0,
+            "cf_cos_margin": 0.9,
+        },
+    }
+    mri = torch.randn(2, 4, 5, 3, requires_grad=True)
+    batch = {
+        "mri": mri,
+        "deltas": torch.tensor([[10.0, 20.0, 30.0], [11.0, 21.0, 31.0]]),
+        "survival_time": torch.tensor(
+            [[800.0, 700.0, 600.0], [700.0, 600.0, 500.0]]
+        ),
+        "event": torch.ones(2, 3),
+        "full_text": ["full treatment one", "full treatment two"],
+        "step_text": [
+            [interval_text("Temozolomide"), interval_text("Avastin")],
+            [interval_text("Avastin"), interval_text("Lomustine")],
+            [interval_text("Lomustine"), interval_text(None)],
+        ],
+        "clinical_text": ["clinical one", "clinical two"],
+    }
+
+    total, values, risk = trainer.step(batch, optimizer_step=1, compute_cf=False)
+    total.backward()
+
+    assert total.ndim == 0
+    assert set(values) == {"loss", "latent", "cox", "bce", "cf"}
+    assert risk.shape == (2,)
+    predictor = model.predictors[0]
+    for stage in range(3):
+        torch.testing.assert_close(predictor.calls[stage], mri[:, stage])
+    assert mri.grad[:, 0].abs().sum() > 0
+    torch.testing.assert_close(mri.grad[:, 1:], torch.zeros_like(mri.grad[:, 1:]))
+
+
+def test_teacher_forced_counterfactual_loss_uses_true_pre_states():
+    model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
+    initial = torch.zeros(4, 5, 3)
+    member_states = torch.randn(2, 4, 3, 5, 3)
+    pre_states = torch.stack(
+        [torch.full((4, 5, 3), value) for value in (1.0, 2.0, 3.0)],
+        dim=1,
+    )
+    conditions = torch.ones(4, 3, 4)
+    deltas = torch.ones(4, 3)
+    texts = [[interval_text("Temozolomide")] * 4 for _ in range(3)]
+
+    counterfactual_loss(
+        model,
+        initial,
+        member_states,
+        conditions,
+        deltas,
+        texts,
+        0.9,
+        pre_states=pre_states,
+    )
+
+    assert len(model.clarity.cf_calls) == 6
+    for member in range(2):
+        for stage in range(3):
+            call = model.clarity.cf_calls[member * 3 + stage]
+            torch.testing.assert_close(call["pre_latent"], pre_states[:, stage])
+
+
 def test_all_pair_counterfactual_loss_uses_pair_condition():
     model = StagewiseDynamics(TinyClarity(), ensemble_size=2, seed=42)
     initial = torch.zeros(4, 5, 3)

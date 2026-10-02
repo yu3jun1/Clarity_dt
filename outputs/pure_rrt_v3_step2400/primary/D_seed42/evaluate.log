@@ -1,4 +1,4 @@
-Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<04:06,  3.58it/s]Loading weights:   0%|          | 4/883 [00:00<01:11, 12.31it/s]Loading weights:   3%|▎         | 29/883 [00:00<00:09, 87.76it/s]Loading weights:   5%|▍         | 44/883 [00:00<00:07, 105.78it/s]Loading weights:   8%|▊         | 70/883 [00:00<00:05, 149.12it/s]Loading weights:  11%|█         | 95/883 [00:00<00:04, 176.57it/s]Loading weights:  14%|█▎        | 120/883 [00:00<00:03, 191.85it/s]Loading weights:  16%|█▌        | 141/883 [00:01<00:03, 195.71it/s]Loading weights:  18%|█▊        | 162/883 [00:01<00:03, 192.11it/s]Loading weights:  21%|██        | 187/883 [00:01<00:03, 205.32it/s]Loading weights:  24%|██▍       | 212/883 [00:01<00:03, 212.02it/s]Loading weights:  27%|██▋       | 237/883 [00:01<00:02, 217.59it/s]Loading weights:  29%|██▉       | 259/883 [00:01<00:02, 209.58it/s]Loading weights:  32%|███▏      | 281/883 [00:01<00:03, 197.98it/s]Loading weights:  34%|███▍      | 302/883 [00:01<00:02, 198.01it/s]Loading weights:  37%|███▋      | 325/883 [00:01<00:02, 205.71it/s]Loading weights:  39%|███▉      | 346/883 [00:02<00:02, 200.54it/s]Loading weights:  42%|████▏     | 368/883 [00:02<00:02, 202.67it/s]Loading weights:  44%|████▍     | 391/883 [00:02<00:02, 209.38it/s]Loading weights:  47%|████▋     | 413/883 [00:02<00:02, 203.72it/s]Loading weights:  49%|████▉     | 434/883 [00:02<00:02, 198.13it/s]Loading weights:  58%|█████▊    | 513/883 [00:02<00:01, 363.75it/s]Loading weights:  65%|██████▌   | 575/883 [00:02<00:00, 431.12it/s]Loading weights:  72%|███████▏  | 637/883 [00:02<00:00, 482.94it/s]Loading weights:  81%|████████▏ | 719/883 [00:02<00:00, 579.34it/s]Loading weights:  88%|████████▊ | 779/883 [00:02<00:00, 583.56it/s]Loading weights:  98%|█████████▊| 865/883 [00:03<00:00, 661.82it/s]Loading weights: 100%|██████████| 883/883 [00:03<00:00, 285.44it/s]
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<04:09,  3.54it/s]Loading weights:   0%|          | 4/883 [00:00<01:11, 12.23it/s]Loading weights:   4%|▍         | 37/883 [00:00<00:07, 113.83it/s]Loading weights:   8%|▊         | 68/883 [00:00<00:04, 169.51it/s]Loading weights:  11%|█         | 95/883 [00:00<00:04, 194.63it/s]Loading weights:  14%|█▎        | 121/883 [00:00<00:03, 212.62it/s]Loading weights:  18%|█▊        | 159/883 [00:00<00:02, 256.76it/s]Loading weights:  21%|██        | 187/883 [00:01<00:02, 254.80it/s]Loading weights:  25%|██▌       | 224/883 [00:01<00:02, 287.77it/s]Loading weights:  29%|██▉       | 254/883 [00:01<00:02, 290.14it/s]Loading weights:  33%|███▎      | 290/883 [00:01<00:01, 303.33it/s]Loading weights:  37%|███▋      | 328/883 [00:01<00:01, 319.07it/s]Loading weights:  41%|████      | 361/883 [00:01<00:01, 309.53it/s]Loading weights:  45%|████▍     | 394/883 [00:01<00:01, 307.95it/s]Loading weights:  48%|████▊     | 425/883 [00:01<00:01, 246.86it/s]Loading weights:  59%|█████▉    | 519/883 [00:01<00:00, 414.64it/s]Loading weights:  70%|██████▉   | 615/883 [00:02<00:00, 553.37it/s]Loading weights:  78%|███████▊  | 687/883 [00:02<00:00, 596.21it/s]Loading weights:  88%|████████▊ | 777/883 [00:02<00:00, 677.82it/s]Loading weights:  96%|█████████▌| 849/883 [00:02<00:00, 652.55it/s]Loading weights: 100%|██████████| 883/883 [00:02<00:00, 366.42it/s]
 trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
 
 Model statistics:
@@ -13,18 +13,18 @@ Model statistics:
   "warmup_steps": 240,
   "samples_seen": 35520,
   "effective_dataset_passes": 480.0,
-  "checkpoint_optimizer_step": 432,
-  "checkpoint_samples_seen": 6396,
-  "checkpoint_effective_dataset_passes": 86.43243243243244,
+  "checkpoint_optimizer_step": 384,
+  "checkpoint_samples_seen": 5688,
+  "checkpoint_effective_dataset_passes": 76.86486486486487,
   "checkpoint_file": "best_val_loss.pt",
   "checkpoint_selection_criterion": "validation_total_loss",
   "checkpoint_validation_metrics": {
-    "loss": 1.6187647581100464,
-    "latent": 0.19468997418880463,
-    "cox": 1.4945181608200073,
-    "bce": 0.02690163254737854,
+    "loss": 1.5388319492340088,
+    "latent": 0.20138876140117645,
+    "cox": 1.3795212507247925,
+    "bce": 0.058616261929273605,
     "cf": 0.0,
-    "c_index": 0.375
+    "c_index": 0.5
   },
   "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
   "cohort_counts": {
@@ -50,103 +50,104 @@ Model statistics:
       "trajectory_count": 16,
       "unique_patient_count": 8,
       "primary_survival_window_count": 8,
-      "latent_mse": 0.16671092808246613,
-      "cosine_similarity": 0.9124452397227287,
-      "c_index": 0.5294117647058824,
-      "brier365": 0.9539593777838943
+      "latent_mse": 0.17369636101648211,
+      "cosine_similarity": 0.9086013957858086,
+      "c_index": 0.5882352941176471,
+      "brier365": 0.807563870227002
     },
     "H2": {
       "trajectory_count": 16,
       "unique_patient_count": 8,
       "primary_survival_window_count": 8,
-      "latent_mse": 0.15073282178491354,
-      "cosine_similarity": 0.9210262484848499,
-      "c_index": 0.5333333333333333,
-      "brier365": 0.9214344133162325
+      "latent_mse": 0.16015170980244875,
+      "cosine_similarity": 0.91586534678936,
+      "c_index": 0.6,
+      "brier365": 0.8161721931184152
     },
     "H3": {
       "trajectory_count": 16,
       "unique_patient_count": 8,
       "primary_survival_window_count": 8,
-      "latent_mse": 0.14209353271871805,
-      "cosine_similarity": 0.925814937800169,
+      "latent_mse": 0.15265309531241655,
+      "cosine_similarity": 0.920039713382721,
       "c_index": 0.4,
-      "brier365": 0.2577866857891947
+      "brier365": 0.24718327223292094
     }
   },
   "representation_sanity": {
-    "observed_latent_variance": 0.05848737061023712,
-    "observed_transition_l2_mean": 36.00604248046875,
-    "encoder_trainable_parameter_rms_delta": 0.005614356537106148
+    "observed_latent_variance": 0.058343932032585144,
+    "observed_transition_l2_mean": 35.95404052734375,
+    "encoder_trainable_parameter_rms_delta": 0.005464576595300413
   },
-  "error_accumulation": -0.024617395363748074,
+  "error_accumulation": -0.02104326570406556,
+  "h3_h1_mse_ratio": 0.8788502788376277,
   "uncertainty": {
     "H1": {
-      "latent_disagreement_mean": 0.018226115964353085,
-      "latent_disagreement_error_pearson": -0.5564596372050703,
-      "survival_probability_disagreement_mean": 0.0072773488300299505
+      "latent_disagreement_mean": 0.019013160257600248,
+      "latent_disagreement_error_pearson": -0.5397010774233654,
+      "survival_probability_disagreement_mean": 0.022617401758907363
     },
     "H2": {
-      "latent_disagreement_mean": 0.01731125731021166,
-      "latent_disagreement_error_pearson": -0.5042601654388519,
-      "survival_probability_disagreement_mean": 0.0030545728805009276
+      "latent_disagreement_mean": 0.017907779081724584,
+      "latent_disagreement_error_pearson": -0.42111026571481,
+      "survival_probability_disagreement_mean": 0.01419242690099054
     },
     "H3": {
-      "latent_disagreement_mean": 0.01700300007360056,
-      "latent_disagreement_error_pearson": -0.8114235764190666,
-      "survival_probability_disagreement_mean": 0.0031006307053758064
+      "latent_disagreement_mean": 0.017455797584261745,
+      "latent_disagreement_error_pearson": -0.6829378582081262,
+      "survival_probability_disagreement_mean": 0.005288437016133685
     }
   },
   "member_diagnostics": {
     "H1": [
       {
         "member_index": 0,
-        "latent_mse": 0.17928051855415106,
-        "cosine_similarity": 0.9057268127799034
+        "latent_mse": 0.18524722941219807,
+        "cosine_similarity": 0.9024458155035973
       },
       {
         "member_index": 1,
-        "latent_mse": 0.19036800600588322,
-        "cosine_similarity": 0.8995521813631058
+        "latent_mse": 0.2006356380879879,
+        "cosine_similarity": 0.893742423504591
       },
       {
         "member_index": 2,
-        "latent_mse": 0.1851626168936491,
-        "cosine_similarity": 0.9024919047951698
+        "latent_mse": 0.19224569713696837,
+        "cosine_similarity": 0.8985926546156406
       }
     ],
     "H2": [
       {
         "member_index": 0,
-        "latent_mse": 0.16181911947205663,
-        "cosine_similarity": 0.9150719568133354
+        "latent_mse": 0.16856051282957196,
+        "cosine_similarity": 0.9113899990916252
       },
       {
         "member_index": 1,
-        "latent_mse": 0.17299372516572475,
-        "cosine_similarity": 0.9088643677532673
+        "latent_mse": 0.18622282706201077,
+        "cosine_similarity": 0.901498343795538
       },
       {
         "member_index": 2,
-        "latent_mse": 0.1693193963728845,
-        "cosine_similarity": 0.9109745621681213
+        "latent_mse": 0.1793951252475381,
+        "cosine_similarity": 0.9054813906550407
       }
     ],
     "H3": [
       {
         "member_index": 0,
-        "latent_mse": 0.15226693265140057,
-        "cosine_similarity": 0.920311450958252
+        "latent_mse": 0.16054561454802752,
+        "cosine_similarity": 0.9158181548118591
       },
       {
         "member_index": 1,
-        "latent_mse": 0.16515679750591516,
-        "cosine_similarity": 0.9132243357598782
+        "latent_mse": 0.1790866469964385,
+        "cosine_similarity": 0.9055177010595798
       },
       {
         "member_index": 2,
-        "latent_mse": 0.15986587246879935,
-        "cosine_similarity": 0.9161179810762405
+        "latent_mse": 0.1706944154575467,
+        "cosine_similarity": 0.9102182015776634
       }
     ]
   }

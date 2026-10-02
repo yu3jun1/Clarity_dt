@@ -51,6 +51,25 @@ A/B/C/D 全部从 `s0` 递归部署到 H1/H2/H3。
 
 旧 `lambda_RRT` weight ablation 已暂停，没有活动配置或运行脚本。
 
+## Teacher-forced Stage-wise 机制消融
+
+独立的 E 组用于区分 stage-wise supervision 与 recursive predicted-state
+training 的贡献，不加入已冻结的 A/B/C/D factorial：
+
+| 组 | Train H1 input | Train H2 input | Train H3 input | Test deployment |
+|---|---|---|---|---|
+| E: TF-SW | `s0` | `stopgrad(s1_true)` | `stopgrad(s2_true)` | recursive |
+
+E 与 B 复用相同的 `StagewiseTrajectoryDataset`、H1/H2/H3 等权 latent loss、
+survival/CF objective、batch size 16、2400 optimizer steps、240 warmup steps、
+模型结构、优化器和 checkpoint 选择规则。E 的 CF pre-state 同样使用
+`s0/s1_true/s2_true`；测试仍统一执行
+`s0 -> ŝ1 -> ŝ2 -> ŝ3`，不使用 teacher forcing。核心比较是 E vs B。
+
+独立配置位于
+`configs/ablations/teacher_forced_stagewise.yaml`，输出写入
+`outputs/ablations/teacher_forced_stagewise/`，不会改变主实验配置或结果目录。
+
 ## 数据与配置
 
 活动配置是 [configs/pure_rrt_v3.yaml](configs/pure_rrt_v3.yaml)。它继续使用固定患者级划分 [data/splits.json](data/splits.json)。
@@ -80,14 +99,18 @@ Stage treatment 严格按 MRI 区间构造。临床时间线把治疗切片记�
 
     conda run -n py310 env PYTHONPATH="$PWD/src" python -m pytest -q
 
-单独运行一组（GPU 只能是 4–7）：
+单独运行一组（GPU 0–7）：
 
     bash scripts/pure_rrt_v3/run_one.sh D 42 4
 
-按计划先在 tmux 中只运行 seed 42：
+单独运行 E seed 42：
 
-    tmux new-session -d -s clarity_pure_rrt_v3 \
-      'bash scripts/pure_rrt_v3/run_seed42.sh'
+    bash scripts/teacher_forced_stagewise/run_seed42.sh 3
+
+同时重跑 A/B/C/D seed 42 并在 A 完成后运行 E seed 42：
+
+    tmux new-session -d -s clarity_seed42_rerun_tf \
+      'bash scripts/teacher_forced_stagewise/run_seed42_and_rerun_main.sh'
 
 只有确认 seed 42 的方向合理后，才手动补充 seed 43/44：
 
@@ -101,11 +124,15 @@ Stage treatment 严格按 MRI 区间构造。临床时间线把治疗切片记�
     ├── stagewise_recursive/              # v2 旧结果，只归档
     ├── pure_rrt_v3/                      # endpoint/open-loop A/C 的旧 v3 结果
     ├── pure_rrt_v3_clarity_allpair/      # 已冻结的 epoch-based 2×2 factorial 结果
-    └── pure_rrt_v3_step2400/             # 当前 step-fair 2×2 factorial 输出
+    ├── pure_rrt_v3_step2400/             # 当前 step-fair 2×2 factorial 输出
         ├── primary/
         │   ├── A_seed42/
         │   ├── B_seed42/
         │   ├── C_seed42/
         │   └── D_seed42/
+        ├── summary.json
+        └── summary.md
+    └── ablations/teacher_forced_stagewise/
+        ├── primary/E_seed42/
         ├── summary.json
         └── summary.md

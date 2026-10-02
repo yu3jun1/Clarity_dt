@@ -1,10 +1,66 @@
 import pytest
+import torch
 
 from clarity_rrt_v3.evaluate import (
     member_diagnostics,
+    recursive_predictions,
     summarize_runs,
     uncertainty_metrics,
 )
+
+
+class RecursiveOnlyEvaluationModel:
+    def __init__(self):
+        self.mri_encoder = lambda tensor: tensor
+        self.rollout_calls = 0
+
+    def eval(self):
+        return self
+
+    def encode_conditions(self, text_by_stage, clinical_text):
+        return torch.zeros(len(clinical_text), len(text_by_stage), 1)
+
+    def rollout(self, initial, step_conditions, step_deltas):
+        self.rollout_calls += 1
+        return initial[None, :, None].repeat(1, 1, 3, 1, 1)
+
+    def teacher_forced(self, *args, **kwargs):
+        raise AssertionError("Evaluation must not use teacher forcing")
+
+    def survival(self, initial, member_states, conditions):
+        shape = member_states.shape[:3]
+        return torch.zeros(shape), torch.zeros(shape)
+
+
+def test_teacher_forced_evaluation_still_uses_recursive_rollout():
+    model = RecursiveOnlyEvaluationModel()
+    batch = {
+        "mri": torch.arange(8, dtype=torch.float32).reshape(2, 4, 1, 1),
+        "deltas": torch.ones(2, 3),
+        "step_text": [["a", "b"], ["c", "d"], ["e", "f"]],
+        "prefix_text": [["a", "b"], ["c", "d"], ["e", "f"]],
+        "clinical_text": ["one", "two"],
+        "patient": ["P1", "P2"],
+        "timepoints": [["t0", "t1", "t2", "t3"], ["t0", "t1", "t2", "t3"]],
+        "primary_survival_window": torch.tensor([1, 0]),
+        "survival_time": torch.tensor(
+            [[800.0, 700.0, 600.0], [700.0, 600.0, 500.0]]
+        ),
+        "event": torch.ones(2, 3),
+    }
+
+    rows, representation = recursive_predictions(
+        model,
+        [batch],
+        torch.device("cpu"),
+    )
+
+    assert model.rollout_calls == 1
+    assert len(rows) == 6
+    assert set(representation) == {
+        "observed_latent_variance",
+        "observed_transition_l2_mean",
+    }
 
 
 def test_uncertainty_reports_v3_secondary_metrics():
@@ -102,6 +158,7 @@ def test_cross_seed_summary_keeps_secondary_and_representation_metrics():
                 "checkpoint_optimizer_step": 1200,
                 "recursive": recursive,
                 "error_accumulation": 0.1,
+                "h3_h1_mse_ratio": 1.0,
                 "representation_sanity": representation,
                 "uncertainty": uncertainty,
                 "member_diagnostics": members,
@@ -113,3 +170,4 @@ def test_cross_seed_summary_keeps_secondary_and_representation_metrics():
     assert summary["observed_latent_variance"]["mean"] == 0.4
     assert summary["optimizer_steps"]["mean"] == 2400
     assert summary["H3_member_2_latent_mse"]["mean"] == 5.0
+    assert summary["h3_h1_mse_ratio"]["mean"] == 1.0

@@ -16,7 +16,7 @@ from .data import PRIMARY_SURVIVAL_WINDOW_RULE
 from .model import StagewiseDynamics
 from .train import (
     PRIMARY_CHECKPOINT_NAME,
-    assert_factorial_design,
+    assert_experiment_design,
     assert_upstream_commit,
     build_loaders,
     configure_upstream,
@@ -256,7 +256,7 @@ def evaluate_one(
     device_name: str,
 ) -> dict[str, Any]:
     config = load_config(config_path)
-    assert_factorial_design(config)
+    assert_experiment_design(config)
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
@@ -331,6 +331,9 @@ def evaluate_one(
         "error_accumulation": (
             horizons["H3"]["latent_mse"] - horizons["H1"]["latent_mse"]
         ),
+        "h3_h1_mse_ratio": (
+            horizons["H3"]["latent_mse"] / horizons["H1"]["latent_mse"]
+        ),
     }
     if variant_config["training_scheme"] == "clarity_all_pair":
         metrics["all_pair_counts"] = {
@@ -386,6 +389,18 @@ def summarize_runs(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     summary["error_accumulation"] = statistics(
         [float(run["error_accumulation"]) for run in runs]
     )
+    summary["h3_h1_mse_ratio"] = statistics(
+        [
+            float(
+                run.get(
+                    "h3_h1_mse_ratio",
+                    float(run["recursive"]["H3"]["latent_mse"])
+                    / float(run["recursive"]["H1"]["latent_mse"]),
+                )
+            )
+            for run in runs
+        ]
+    )
     for metric in (
         "observed_latent_variance",
         "observed_transition_l2_mean",
@@ -427,16 +442,23 @@ def summarize_runs(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def aggregate(config_path: str | Path) -> dict[str, Any]:
     config = load_config(config_path)
-    assert_factorial_design(config)
+    assert_experiment_design(config)
+    variants = tuple(config["variants"])
+    ensemble_variants = tuple(
+        variant
+        for variant in variants
+        if int(config["variants"][variant]["ensemble_size"]) > 1
+    )
     runs_by_variant = {
         variant: runs
-        for variant in "ABCD"
+        for variant in variants
         if (runs := collect_runs(config, variant))
     }
     primary = {
         variant: summarize_runs(runs) for variant, runs in runs_by_variant.items()
     }
     output: dict[str, Any] = {
+        "experiment_kind": config.get("experiment_kind", "main_factorial"),
         "training_control": {
             "total_steps": int(config["training"]["total_steps"]),
             "warmup_steps": int(config["training"]["warmup_steps"]),
@@ -469,8 +491,13 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
         metric = block[key]
         return f"{metric['mean']:.4f} ± {metric['std']:.4f}"
 
+    title = (
+        "# Pure Stage-wise RRT v3"
+        if output["experiment_kind"] == "main_factorial"
+        else "# Teacher-forced Stage-wise Ablation"
+    )
     lines = [
-        "# Pure Stage-wise RRT v3",
+        title,
         "",
     ]
     if "upstream_commit" in output:
@@ -497,7 +524,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
                 "|---|---:|---:|---:|---:|---:|",
             ]
         )
-        for variant in "ABCD":
+        for variant in variants:
             if variant not in primary:
                 continue
             block = primary[variant]
@@ -532,17 +559,19 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
         [
             "## Table 1 — Recursive Latent Dynamics",
             "",
-            "| Group | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
-            "|---|---:|---:|---:|---:|---:|---:|",
+            "| Group | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H3/H1 MSE | H3-H1 MSE | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
-    for variant in "ABCD":
+    for variant in variants:
         if variant not in primary:
             continue
         block = primary[variant]
         lines.append(
             f"| {variant} | {value(block, 'H1_latent_mse')} | "
             f"{value(block, 'H2_latent_mse')} | {value(block, 'H3_latent_mse')} | "
+            f"{value(block, 'h3_h1_mse_ratio')} | "
+            f"{value(block, 'error_accumulation')} | "
             f"{value(block, 'H1_cosine_similarity')} | "
             f"{value(block, 'H2_cosine_similarity')} | "
             f"{value(block, 'H3_cosine_similarity')} |"
@@ -556,7 +585,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             "|---|---:|---:|",
         ]
     )
-    for variant in "ABCD":
+    for variant in variants:
         if variant not in primary:
             continue
         block = primary[variant]
@@ -564,47 +593,48 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             f"| {variant} | {value(block, 'H3_c_index')} | "
             f"{value(block, 'H3_brier365')} |"
         )
-    lines.extend(
-        [
-            "",
-            "## Table 3 — Ensemble Reliability (Secondary)",
-            "",
-            "| Group | H3 latent disagreement | H3 disagreement-error Pearson | H3 survival-probability disagreement |",
-            "|---|---:|---:|---:|",
-        ]
-    )
-    for variant in ("C", "D"):
-        if variant not in primary:
-            continue
-        block = primary[variant]
-        lines.append(
-            f"| {variant} | {value(block, 'H3_latent_disagreement_mean')} | "
-            f"{value(block, 'H3_latent_disagreement_error_pearson')} | "
-            f"{value(block, 'H3_survival_probability_disagreement_mean')} |"
+    if ensemble_variants:
+        lines.extend(
+            [
+                "",
+                "## Table 3 — Ensemble Reliability (Secondary)",
+                "",
+                "| Group | H3 latent disagreement | H3 disagreement-error Pearson | H3 survival-probability disagreement |",
+                "|---|---:|---:|---:|",
+            ]
         )
-    lines.extend(
-        [
-            "",
-            "## Ensemble member-level dynamics",
-            "",
-            "| Group | Member | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
-            "|---|---:|---:|---:|---:|---:|---:|---:|",
-        ]
-    )
-    for variant in ("C", "D"):
-        if variant not in primary:
-            continue
-        block = primary[variant]
-        for member in range(int(config["variants"][variant]["ensemble_size"])):
+        for variant in ensemble_variants:
+            if variant not in primary:
+                continue
+            block = primary[variant]
             lines.append(
-                f"| {variant} | {member} | "
-                f"{value(block, f'H1_member_{member}_latent_mse')} | "
-                f"{value(block, f'H2_member_{member}_latent_mse')} | "
-                f"{value(block, f'H3_member_{member}_latent_mse')} | "
-                f"{value(block, f'H1_member_{member}_cosine_similarity')} | "
-                f"{value(block, f'H2_member_{member}_cosine_similarity')} | "
-                f"{value(block, f'H3_member_{member}_cosine_similarity')} |"
+                f"| {variant} | {value(block, 'H3_latent_disagreement_mean')} | "
+                f"{value(block, 'H3_latent_disagreement_error_pearson')} | "
+                f"{value(block, 'H3_survival_probability_disagreement_mean')} |"
             )
+        lines.extend(
+            [
+                "",
+                "## Ensemble member-level dynamics",
+                "",
+                "| Group | Member | H1 MSE ↓ | H2 MSE ↓ | H3 MSE ↓ | H1 cosine ↑ | H2 cosine ↑ | H3 cosine ↑ |",
+                "|---|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for variant in ensemble_variants:
+            if variant not in primary:
+                continue
+            block = primary[variant]
+            for member in range(int(config["variants"][variant]["ensemble_size"])):
+                lines.append(
+                    f"| {variant} | {member} | "
+                    f"{value(block, f'H1_member_{member}_latent_mse')} | "
+                    f"{value(block, f'H2_member_{member}_latent_mse')} | "
+                    f"{value(block, f'H3_member_{member}_latent_mse')} | "
+                    f"{value(block, f'H1_member_{member}_cosine_similarity')} | "
+                    f"{value(block, f'H2_member_{member}_cosine_similarity')} | "
+                    f"{value(block, f'H3_member_{member}_cosine_similarity')} |"
+                )
     lines.extend(
         [
             "",
@@ -614,7 +644,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             "|---|---:|---:|---:|",
         ]
     )
-    for variant in "ABCD":
+    for variant in variants:
         if variant not in primary:
             continue
         block = primary[variant]
@@ -632,7 +662,7 @@ def aggregate(config_path: str | Path) -> dict[str, Any]:
             "|---|---:|---:|---:|---:|",
         ]
     )
-    for variant in "ABCD":
+    for variant in variants:
         if variant not in primary:
             continue
         block = primary[variant]
@@ -651,7 +681,7 @@ def parser() -> argparse.ArgumentParser:
     subparsers = result.add_subparsers(dest="command", required=True)
     run = subparsers.add_parser("run")
     run.add_argument("--config", default="configs/pure_rrt_v3.yaml")
-    run.add_argument("--variant", required=True, choices=list("ABCD"))
+    run.add_argument("--variant", required=True, choices=list("ABCDE"))
     run.add_argument("--seed", required=True, type=int)
     run.add_argument("--device", default="cuda:0")
     aggregate_parser = subparsers.add_parser("aggregate")

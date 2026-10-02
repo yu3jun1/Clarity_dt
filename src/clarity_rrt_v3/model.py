@@ -97,6 +97,27 @@ class StagewiseDynamics(nn.Module):
             members.append(torch.stack(trajectory, dim=1))
         return torch.stack(members)
 
+    def teacher_forced(
+        self,
+        true_inputs: torch.Tensor,
+        step_conditions: torch.Tensor,
+        step_deltas: torch.Tensor,
+    ) -> torch.Tensor:
+        """Predict each transition from its corresponding observed pre-state."""
+        members = []
+        for predictor in self.predictors:
+            trajectory = []
+            for step in range(3):
+                trajectory.append(
+                    predictor(
+                        true_inputs[:, step],
+                        step_conditions[:, step],
+                        step_deltas[:, step],
+                    )
+                )
+            members.append(torch.stack(trajectory, dim=1))
+        return torch.stack(members)
+
     def survival(
         self,
         initial: torch.Tensor,
