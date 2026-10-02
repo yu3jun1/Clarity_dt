@@ -1,0 +1,76 @@
+{
+  "variant": "B",
+  "seed": 43,
+  "training_scheme": "pure_recursive",
+  "optimizer_steps": 2400,
+  "warmup_steps": 240,
+  "samples_seen": 35520,
+  "effective_dataset_passes": 480.0,
+  "checkpoint_optimizer_step": 432,
+  "checkpoint_samples_seen": 6396,
+  "checkpoint_effective_dataset_passes": 86.43243243243244,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 1.4975934028625488,
+    "latent": 0.194858118891716,
+    "cox": 1.295057773590088,
+    "bce": 0.10510659962892532,
+    "cf": 0.0,
+    "c_index": 0.625
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1733919344842434,
+      "cosine_similarity": 0.9091643840074539,
+      "c_index": 0.5882352941176471,
+      "brier365": 0.6343478692917954
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.16145643219351768,
+      "cosine_similarity": 0.9154563508927822,
+      "c_index": 0.4666666666666667,
+      "brier365": 0.7850874648891751
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.15704359021037817,
+      "cosine_similarity": 0.9178851582109928,
+      "c_index": 0.6,
+      "brier365": 0.2183010623168927
+    }
+  },
+  "representation_sanity": {
+    "observed_latent_variance": 0.05815030261874199,
+    "observed_transition_l2_mean": 35.994747161865234,
+    "encoder_trainable_parameter_rms_delta": 0.005471403500944624
+  },
+  "error_accumulation": -0.016348344273865223
+}

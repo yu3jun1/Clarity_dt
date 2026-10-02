@@ -1,0 +1,165 @@
+Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<03:49,  3.84it/s]Loading weights:   2%|▏         | 14/883 [00:00<00:17, 48.31it/s]Loading weights:   5%|▍         | 43/883 [00:00<00:06, 126.41it/s]Loading weights:   9%|▉         | 78/883 [00:00<00:04, 197.24it/s]Loading weights:  12%|█▏        | 107/883 [00:00<00:03, 220.82it/s]Loading weights:  15%|█▌        | 134/883 [00:00<00:03, 234.98it/s]Loading weights:  19%|█▉        | 172/883 [00:00<00:02, 270.63it/s]Loading weights:  23%|██▎       | 201/883 [00:00<00:02, 269.90it/s]Loading weights:  27%|██▋       | 237/883 [00:01<00:02, 290.46it/s]Loading weights:  30%|███       | 267/883 [00:01<00:02, 257.65it/s]Loading weights:  33%|███▎      | 294/883 [00:01<00:02, 230.76it/s]Loading weights:  37%|███▋      | 328/883 [00:01<00:02, 253.70it/s]Loading weights:  40%|████      | 356/883 [00:01<00:02, 257.17it/s]Loading weights:  44%|████▍     | 391/883 [00:01<00:01, 281.22it/s]Loading weights:  48%|████▊     | 420/883 [00:01<00:01, 270.00it/s]Loading weights:  51%|█████     | 448/883 [00:01<00:01, 267.00it/s]Loading weights:  63%|██████▎   | 555/883 [00:02<00:00, 488.29it/s]Loading weights:  83%|████████▎ | 729/883 [00:02<00:00, 840.33it/s]Loading weights: 100%|██████████| 883/883 [00:02<00:00, 396.15it/s]
+trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
+
+Model statistics:
+  Total parameters:     2,629,284,338
+  Trainable parameters: 22,381,442
+  MRI encoder LoRA:     589,824
+{
+  "variant": "C",
+  "seed": 43,
+  "training_scheme": "clarity_all_pair",
+  "optimizer_steps": 2400,
+  "warmup_steps": 240,
+  "samples_seen": 38200,
+  "effective_dataset_passes": 100.0,
+  "checkpoint_optimizer_step": 432,
+  "checkpoint_samples_seen": 6876,
+  "checkpoint_effective_dataset_passes": 18.0,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 1.8743153725351607,
+    "latent": 0.17916910563196456,
+    "cox": 1.6444612911769323,
+    "bce": 0.1402695391859327,
+    "cf": 0.0,
+    "c_index": 0.375
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.144210169557482,
+      "cosine_similarity": 0.9250128529965878,
+      "c_index": 0.5882352941176471,
+      "brier365": 0.6418020478964466
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1374125420115888,
+      "cosine_similarity": 0.9285860806703568,
+      "c_index": 0.26666666666666666,
+      "brier365": 0.9050010933270054
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.15247776778414845,
+      "cosine_similarity": 0.9207946956157684,
+      "c_index": 0.6,
+      "brier365": 0.41331992286427005
+    }
+  },
+  "representation_sanity": {
+    "observed_latent_variance": 0.062051597982645035,
+    "observed_transition_l2_mean": 38.44330978393555,
+    "encoder_trainable_parameter_rms_delta": 0.00611092486946075
+  },
+  "error_accumulation": 0.00826759822666645,
+  "all_pair_counts": {
+    "train": {
+      "pair_count": 382,
+      "unique_patient_count": 38,
+      "primary_survival_pair_count": 38
+    },
+    "validation": {
+      "pair_count": 56,
+      "unique_patient_count": 5,
+      "primary_survival_pair_count": 5
+    }
+  },
+  "uncertainty": {
+    "H1": {
+      "latent_disagreement_mean": 0.008805590361589566,
+      "latent_disagreement_error_pearson": -0.46410041572762545,
+      "survival_probability_disagreement_mean": 0.024416710599325597
+    },
+    "H2": {
+      "latent_disagreement_mean": 0.010113807074958459,
+      "latent_disagreement_error_pearson": -0.2634429605020547,
+      "survival_probability_disagreement_mean": 0.027942425906076096
+    },
+    "H3": {
+      "latent_disagreement_mean": 0.017772842897102237,
+      "latent_disagreement_error_pearson": 0.7160297972975277,
+      "survival_probability_disagreement_mean": 0.10925015760585666
+    }
+  },
+  "member_diagnostics": {
+    "H1": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.15275324787944555,
+        "cosine_similarity": 0.9206831306219101
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.15323134791105986,
+        "cosine_similarity": 0.9202899485826492
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.15306268446147442,
+        "cosine_similarity": 0.9203930236399174
+      }
+    ],
+    "H2": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.14616344310343266,
+        "cosine_similarity": 0.924171719700098
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.1479844218119979,
+        "cosine_similarity": 0.9230319634079933
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.14843118097633123,
+        "cosine_similarity": 0.922896221280098
+      }
+    ],
+    "H3": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.20497769117355347,
+        "cosine_similarity": 0.8949903473258018
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.15379307372495532,
+        "cosine_similarity": 0.9201708026230335
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.15198105946183205,
+        "cosine_similarity": 0.9213242419064045
+      }
+    ]
+  }
+}
