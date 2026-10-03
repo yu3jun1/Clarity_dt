@@ -1,0 +1,3 @@
+[step2400] variant=B seed=42 gpu=2 train_start=2026-09-30T16:03:39Z
+[step2400] variant=B evaluate_start=2026-10-01T01:02:54Z
+[step2400] variant=B complete=2026-10-01T01:03:43Z

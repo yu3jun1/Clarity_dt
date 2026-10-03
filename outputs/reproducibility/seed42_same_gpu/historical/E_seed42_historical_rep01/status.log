@@ -1,0 +1,3 @@
+[tf-stagewise] variant=E seed=42 gpu=5 train_start=2026-10-02T04:21:30Z
+[tf-stagewise] variant=E seed=42 evaluate_start=2026-10-02T12:52:35Z
+[tf-stagewise] variant=E seed=42 complete=2026-10-02T12:53:24Z

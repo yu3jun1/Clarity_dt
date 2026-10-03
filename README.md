@@ -95,6 +95,12 @@ Stage treatment 严格按 MRI 区间构造。临床时间线把治疗切片记�
 
 ## 运行
 
+同卡 deterministic seed42 重复实验（保留旧/新结果，A/B/E 各连续跑两次；稳定后自动补 E43/44）：
+
+    bash scripts/reproducibility/run_same_gpu.sh 0
+
+详见 [复现性方案](docs/seed42_reproducibility_audit.md)。独立输出在 `outputs/reproducibility/seed42_same_gpu/`，不会覆盖主实验；正式比较使用预先指定的 rep01，不挑性能较好的 replicate。
+
 轻量测试：
 
     conda run -n py310 env PYTHONPATH="$PWD/src" python -m pytest -q

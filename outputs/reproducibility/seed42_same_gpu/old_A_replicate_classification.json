@@ -1,0 +1,7 @@
+{
+  "old_A_h3_mse": 0.6268193917348981,
+  "status": "candidate_anomalous_historical_replicate_requires_adjudication",
+  "excluded": false,
+  "relative_distance_to_stable_A": 0.7708020452690874,
+  "reason": "Two new deterministic A runs are stable. The original run lacks checkpoint/predictions/environment metadata; deterministic settings changed the execution protocol. Stability alone is not evidence sufficient to discard 0.6268."
+}

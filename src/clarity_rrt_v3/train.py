@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import random
 import subprocess
@@ -30,6 +31,9 @@ from .data import (
     load_timeline,
 )
 from .model import StagewiseDynamics
+from .reproducibility import (
+    collect_metadata, configure_reproducibility, seed_worker, state_sha256, utc_now,
+)
 
 
 PRIMARY_CHECKPOINT_NAME = "best_val_loss.pt"
@@ -187,7 +191,11 @@ def build_loaders(
                 else training["evaluation_batch_size"]
             ),
             shuffle=name == "train",
-            generator=torch.Generator().manual_seed(seed) if name == "train" else None,
+            generator=(
+                torch.Generator().manual_seed(seed if name == "train" else seed + 1)
+                if name == "train" or config.get("deterministic") else None
+            ),
+            worker_init_fn=seed_worker if config.get("deterministic") else None,
             num_workers=int(training["num_workers"]),
             collate_fn=dataset.collate,
         )
@@ -349,7 +357,21 @@ def run_directory(
     variant: str,
     seed: int,
 ) -> Path:
-    return Path(config["output_root"]) / "primary" / f"{variant}_seed{seed}"
+    suffix = f"_{config['replicate_id']}" if config.get("replicate_id") else ""
+    if suffix and (not suffix[1:].replace("-", "").replace("_", "").isalnum()):
+        raise ValueError("replicate_id must contain only letters, numbers, '-' or '_'")
+    return Path(config["output_root"]) / "primary" / f"{variant}_seed{seed}{suffix}"
+
+
+def resolve_run_config(config_path, output_root=None, replicate_id=None, deterministic=False):
+    config = load_config(config_path)
+    if output_root is not None:
+        config["output_root"] = str(output_root)
+    if replicate_id is not None:
+        config["replicate_id"] = replicate_id
+    if deterministic:
+        config["deterministic"] = True
+    return config
 
 
 def compute_training_budget(
@@ -399,13 +421,14 @@ class Trainer:
         self.concordance_index = concordance_index
         self.device = device
         self.run_dir = run_dir
-        self.history: list[dict[str, float]] = []
+        self.history: list[dict[str, Any]] = []
         self.best_val_loss = float("inf")
         self.best_c_index = -float("inf")
         self.optimizer_steps = 0
         self.samples_seen = 0
         self.training_budget = compute_training_budget(config, loaders["train"])
         self.training_dataset_size = len(loaders["train"].dataset)
+        self.batch_order_digest = hashlib.sha256()
 
     @property
     def clarity_all_pair(self) -> bool:
@@ -626,6 +649,7 @@ class Trainer:
         return result
 
     def fit(self) -> None:
+        self.batch_order_digest = hashlib.sha256()
         training = self.config["training"]
         total_steps = int(training["total_steps"])
         warmup_steps = int(training["warmup_steps"])
@@ -643,6 +667,9 @@ class Trainer:
                 batch = next(train_iterator)
 
             values = self.training_update(batch, optimizer_step)
+            self.batch_order_digest.update(json.dumps(
+                [batch["patient"], batch.get("timepoints")], separators=(",", ":")
+            ).encode())
             self.scheduler.step()
             self.optimizer_steps = optimizer_step
             batch_size = len(batch["patient"])
@@ -659,12 +686,13 @@ class Trainer:
                 for name, values in records.items()
             }
             validation = self.validation(optimizer_step)
-            row: dict[str, float] = {
+            row: dict[str, Any] = {
                 "optimizer_step": float(optimizer_step),
                 "samples_seen": float(self.samples_seen),
                 "effective_dataset_passes": (
                     self.samples_seen / self.training_dataset_size
                 ),
+                "batch_order_sha256": self.batch_order_digest.hexdigest(),
             }
             row.update({f"train_{name}": value for name, value in train.items()})
             row.update(
@@ -731,6 +759,9 @@ class Trainer:
                 ),
                 "training_budget": dict(self.training_budget),
                 "variant": self.variant,
+                "seed": self.config.get("active_seed"),
+                "replicate_id": self.config.get("replicate_id"),
+                "batch_order_sha256": self.batch_order_digest.hexdigest(),
                 "training_scheme": self.config["variants"][self.variant][
                     "training_scheme"
                 ],
@@ -748,12 +779,26 @@ def train_one(
     variant: str,
     seed: int,
     device_name: str,
+    output_root: str | Path | None = None,
+    replicate_id: str | None = None,
+    deterministic: bool = False,
 ) -> Path:
-    config = load_config(config_path)
+    config = resolve_run_config(config_path, output_root, replicate_id, deterministic)
+    config["active_seed"] = seed
     assert_experiment_design(config)
     upstream_commit = assert_upstream_commit(config)
+    configure_reproducibility(seed, bool(config.get("deterministic")))
     seed_everything(seed)
     device = torch.device(device_name)
+    run_dir = run_directory(config, variant, seed)
+    if config.get("replicate_id") and any(
+        (run_dir / name).exists() for name in ("config.yaml", "history.csv", PRIMARY_CHECKPOINT_NAME)
+    ):
+        raise FileExistsError(f"Refusing to overwrite replicate: {run_dir}")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    metadata = collect_metadata(config, variant, seed, device)
+    metadata_path = run_dir / "run_metadata.json"
+    metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     variant_config = config["variants"][variant]
     upstream_train, _, _, concordance = configure_upstream(config["upstream_root"])
     clarity = upstream_train.build_model(upstream_args(config, seed), device)
@@ -764,8 +809,8 @@ def train_one(
     ).to(device)
     loaders, datasets = build_loaders(config, seed, variant)
     optimizer, scheduler = build_optimizer(config, model)
-    run_dir = run_directory(config, variant, seed)
-    run_dir.mkdir(parents=True, exist_ok=True)
+    metadata["initial_trainable_state_sha256"] = state_sha256(model)
+    metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     resolved = dict(config)
     resolved["upstream_commit"] = upstream_commit
     resolved["active_variant"] = variant
@@ -798,6 +843,12 @@ def train_one(
         run_dir,
     )
     trainer.fit()
+    metadata.update({
+        "training_complete_at_utc": utc_now(),
+        "batch_order_sha256": trainer.batch_order_digest.hexdigest(),
+        "optimizer_steps": trainer.optimizer_steps, "samples_seen": trainer.samples_seen,
+    })
+    metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     return run_dir
 
 
@@ -807,12 +858,16 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--variant", required=True, choices=list("ABCDE"))
     result.add_argument("--seed", required=True, type=int)
     result.add_argument("--device", default="cuda:0")
+    result.add_argument("--output-root")
+    result.add_argument("--replicate", dest="replicate_id")
+    result.add_argument("--deterministic", action="store_true")
     return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
-    train_one(args.config, args.variant, args.seed, args.device)
+    train_one(args.config, args.variant, args.seed, args.device,
+              args.output_root, args.replicate_id, args.deterministic)
     return 0
 
 

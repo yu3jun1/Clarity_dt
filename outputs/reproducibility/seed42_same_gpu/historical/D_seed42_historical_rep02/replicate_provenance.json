@@ -1,0 +1,21 @@
+{
+  "variant": "D",
+  "seed": 42,
+  "replicate_id": "historical_rep02",
+  "path": "outputs/reproducibility/seed42_same_gpu/historical/D_seed42_historical_rep02",
+  "provenance": "current completed rerun, full filesystem snapshot",
+  "original_path": "outputs/pure_rrt_v3_step2400/primary/D_seed42",
+  "status": "retained_unadjudicated",
+  "environment_metadata": "not recorded historically; do not infer from current host",
+  "artifact_sha256": {
+    "best_val_cindex.pt": "2b891a447f73237ddaa5cd08e19a12cadef8bb50fbf57f05d3605937288ebdce",
+    "best_val_loss.pt": "dc879731a0ec76d7f1b61cb0ed2b2ebb8624ef1ac75ad06b0d075ccd1bc1da7d",
+    "config.yaml": "38b4ea75550ae1f3eda8c69cc33c381a035c09fbf735bb549e5ce19d55aa6b6d",
+    "evaluate.log": "4da77ff933c351b47088b4514e8bb562dfa6306f577c6b0318ed867999621ec6",
+    "history.csv": "06ce1c267630ca7eea5ea0c2b2b4dc9e5b248751070deb89b779ddb6efec9a20",
+    "metrics.json": "5742b848b83935bf7aa1b71aceeacb5406ab986dc751d6b83737723706710ac9",
+    "recursive_predictions.csv": "2552fcc4fbd2843026e909fc608569ba543715fea2f736c5a6249092b2a02d27",
+    "status.log": "7efceea769ca51ed8c5cc2abe1ed91329156b53e8c5a62e69fe37d012e017f2a",
+    "train.log": "cba4ab43a4501c7317b644b727c0c7021847e96ede958f0af7be88b6472710c9"
+  }
+}

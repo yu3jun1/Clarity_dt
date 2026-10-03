@@ -1,0 +1,22 @@
+{
+  "variant": "D",
+  "seed": 42,
+  "replicate_id": "historical_rep01",
+  "path": "outputs/reproducibility/seed42_same_gpu/historical/D_seed42_historical_rep01",
+  "provenance": "git:6584f6d",
+  "original_path": "outputs/pure_rrt_v3_step2400/primary/D_seed42",
+  "status": "retained_unadjudicated",
+  "missing_artifacts": [
+    "original checkpoints",
+    "history.csv",
+    "recursive_predictions.csv"
+  ],
+  "environment_metadata": "not recorded historically; do not infer from current host",
+  "artifact_sha256": {
+    "config.yaml": "38b4ea75550ae1f3eda8c69cc33c381a035c09fbf735bb549e5ce19d55aa6b6d",
+    "evaluate.log": "82837c5e2592e1982c7cf9b19a99309aa87e0530891db20b841703d90a59415c",
+    "metrics.json": "05cf76ccf0eff4f956570bde8ca841e0f1c907734400a46de4d125423e2f434c",
+    "status.log": "1e637a865ee997a10eec955c89614d6e1e55fd7bc9ec9fda351bb78e1397dd76",
+    "train.log": "226fdccfad66b2e868cd7e44a0a5291e705446a91a844d2c8dea5c03d29f613f"
+  }
+}

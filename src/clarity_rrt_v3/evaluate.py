@@ -22,10 +22,12 @@ from .train import (
     configure_upstream,
     encode_mri_stages,
     load_config,
+    resolve_run_config,
     run_directory,
     seed_everything,
     upstream_args,
 )
+from .reproducibility import collect_metadata, configure_reproducibility
 
 
 def training_reference(dataset, horizon: int) -> tuple[np.ndarray, np.ndarray]:
@@ -254,10 +256,15 @@ def evaluate_one(
     variant: str,
     seed: int,
     device_name: str,
+    output_root: str | Path | None = None,
+    replicate_id: str | None = None,
+    deterministic: bool = False,
 ) -> dict[str, Any]:
-    config = load_config(config_path)
+    config = resolve_run_config(config_path, output_root, replicate_id, deterministic)
+    config["active_seed"] = seed
     assert_experiment_design(config)
     upstream_commit = assert_upstream_commit(config)
+    configure_reproducibility(seed, bool(config.get("deterministic")))
     seed_everything(seed)
     device = torch.device(device_name)
     variant_config = config["variants"][variant]
@@ -270,6 +277,16 @@ def evaluate_one(
     ).to(device)
     initial_encoder = encoder_trainable_state(model)
     run_dir = run_directory(config, variant, seed)
+    evaluation_metadata = collect_metadata(config, variant, seed, device)
+    if config.get("deterministic"):
+        training_metadata = json.loads((run_dir / "run_metadata.json").read_text())
+        for key in ("source_sha256", "config_sha256", "data_fingerprints", "packages",
+                    "cuda_version", "cudnn_version", "determinism", "cuda_visible_devices"):
+            if training_metadata[key] != evaluation_metadata[key]:
+                raise RuntimeError(f"Training/evaluation provenance differs: {key}")
+    (run_dir / "evaluation_metadata.json").write_text(
+        json.dumps(evaluation_metadata, indent=2) + "\n", encoding="utf-8"
+    )
     checkpoint = torch.load(
         run_dir / PRIMARY_CHECKPOINT_NAME,
         map_location="cpu",
@@ -306,6 +323,8 @@ def evaluate_one(
     metrics: dict[str, Any] = {
         "variant": variant,
         "seed": seed,
+        "replicate_id": config.get("replicate_id"),
+        "deterministic_requested": bool(config.get("deterministic")),
         "training_scheme": checkpoint["training_scheme"],
         "optimizer_steps": int(training_budget["optimizer_steps"]),
         "warmup_steps": int(training_budget["warmup_steps"]),
@@ -684,6 +703,9 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--variant", required=True, choices=list("ABCDE"))
     run.add_argument("--seed", required=True, type=int)
     run.add_argument("--device", default="cuda:0")
+    run.add_argument("--output-root")
+    run.add_argument("--replicate", dest="replicate_id")
+    run.add_argument("--deterministic", action="store_true")
     aggregate_parser = subparsers.add_parser("aggregate")
     aggregate_parser.add_argument("--config", default="configs/pure_rrt_v3.yaml")
     return result
@@ -692,7 +714,8 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.command == "run":
-        metrics = evaluate_one(args.config, args.variant, args.seed, args.device)
+        metrics = evaluate_one(args.config, args.variant, args.seed, args.device,
+                               args.output_root, args.replicate_id, args.deterministic)
     else:
         metrics = aggregate(args.config)
     print(json.dumps(metrics, indent=2))
