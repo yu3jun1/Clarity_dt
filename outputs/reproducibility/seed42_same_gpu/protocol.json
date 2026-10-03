@@ -1,0 +1,32 @@
+{
+  "created_at_utc": "2026-10-03T08:24:10.271207+00:00",
+  "gpu_id": 0,
+  "gpu_uuid": "GPU-8b31b6ad-e100-275f-8313-dc07b2f2635a",
+  "source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+  "policy": {
+    "aggregate_mse_and_ratio_relative_tolerance": 0.01,
+    "cosine_cindex_brier_absolute_tolerance": 0.001,
+    "max_patient_mse_relative_tolerance": 0.05,
+    "same_selected_checkpoint_step_required": true,
+    "same_initial_state_batch_order_device_protocol_required": true,
+    "formal_replicate": "rep01 (preselected, never the better-scoring run)",
+    "old_A_exclusion": "never automatic; candidate anomaly only, all historical runs retained"
+  },
+  "gpu_usage_at_launch": {
+    "memory_used_mib": 563,
+    "utilization_percent": 0
+  },
+  "queue": [
+    "A_seed42_rep01",
+    "A_seed42_rep02",
+    "B_seed42_rep01",
+    "B_seed42_rep02",
+    "E_seed42_rep01",
+    "E_seed42_rep02"
+  ],
+  "conditional_queue": [
+    "E_seed43_rep01",
+    "E_seed44_rep01"
+  ],
+  "no_original_outputs_modified": true
+}
