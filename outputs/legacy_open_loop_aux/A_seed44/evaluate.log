@@ -1,55 +1,0 @@
-WARNING: overwriting environment variables set in the machine
-overwriting variable ['PYTHONPATH']
-Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<05:49,  2.53it/s]Loading weights:   0%|          | 4/883 [00:00<01:32,  9.47it/s]Loading weights:   2%|▏         | 18/883 [00:00<00:19, 43.89it/s]Loading weights:   4%|▍         | 39/883 [00:00<00:09, 88.61it/s]Loading weights:   6%|▌         | 55/883 [00:00<00:07, 106.63it/s]Loading weights:   8%|▊         | 69/883 [00:00<00:07, 113.75it/s]Loading weights:  10%|█         | 89/883 [00:01<00:05, 136.03it/s]Loading weights:  12%|█▏        | 107/883 [00:01<00:05, 148.38it/s]Loading weights:  14%|█▍        | 123/883 [00:01<00:05, 142.77it/s]Loading weights:  16%|█▌        | 141/883 [00:01<00:04, 151.76it/s]Loading weights:  18%|█▊        | 157/883 [00:01<00:05, 144.35it/s]Loading weights:  20%|█▉        | 173/883 [00:01<00:05, 140.71it/s]Loading weights:  21%|██▏       | 188/883 [00:01<00:04, 142.57it/s]Loading weights:  23%|██▎       | 203/883 [00:01<00:04, 143.24it/s]Loading weights:  25%|██▌       | 224/883 [00:01<00:04, 155.66it/s]Loading weights:  27%|██▋       | 240/883 [00:02<00:04, 149.34it/s]Loading weights:  29%|██▉       | 258/883 [00:02<00:03, 156.70it/s]Loading weights:  31%|███▏      | 276/883 [00:02<00:03, 157.10it/s]Loading weights:  33%|███▎      | 292/883 [00:02<00:03, 151.92it/s]Loading weights:  35%|███▌      | 313/883 [00:02<00:03, 167.27it/s]Loading weights:  37%|███▋      | 330/883 [00:02<00:03, 156.26it/s]Loading weights:  39%|███▉      | 346/883 [00:02<00:03, 155.83it/s]Loading weights:  42%|████▏     | 367/883 [00:02<00:03, 163.13it/s]Loading weights:  43%|████▎     | 384/883 [00:03<00:03, 131.21it/s]Loading weights:  45%|████▌     | 401/883 [00:03<00:03, 140.38it/s]Loading weights:  48%|████▊     | 420/883 [00:03<00:03, 147.50it/s]Loading weights:  49%|████▉     | 437/883 [00:03<00:02, 153.27it/s]Loading weights:  54%|█████▍    | 477/883 [00:03<00:01, 219.44it/s]Loading weights:  59%|█████▉    | 520/883 [00:03<00:01, 276.67it/s]Loading weights:  64%|██████▎   | 561/883 [00:03<00:01, 314.14it/s]Loading weights:  68%|██████▊   | 600/883 [00:03<00:00, 335.11it/s]Loading weights:  73%|███████▎  | 643/883 [00:03<00:00, 361.36it/s]Loading weights:  78%|███████▊  | 685/883 [00:03<00:00, 375.95it/s]Loading weights:  82%|████████▏ | 727/883 [00:04<00:00, 386.49it/s]Loading weights:  87%|████████▋ | 769/883 [00:04<00:00, 391.57it/s]Loading weights:  92%|█████████▏| 809/883 [00:04<00:00, 381.46it/s]Loading weights:  96%|█████████▌| 848/883 [00:04<00:00, 297.29it/s]Loading weights: 100%|██████████| 883/883 [00:04<00:00, 194.39it/s]
-trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
-
-Model statistics:
-  Total parameters:     2,629,284,338
-  Trainable parameters: 22,381,442
-  MRI encoder LoRA:     589,824
-{
-  "variant": "A",
-  "seed": 44,
-  "checkpoint": "runs/A_seed44/best.pt",
-  "checkpoint_epoch": 69,
-  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
-  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
-  "resources": {
-    "training_seconds": 14882.60089763801,
-    "peak_gpu_gb": 25.483955712
-  },
-  "direct": {
-    "patients": 20,
-    "samples": 107,
-    "events": 87,
-    "c_index": 0.5751219512195122,
-    "brier365": 0.4007107852316749,
-    "brier_na_reason": null
-  },
-  "recursive": {
-    "H1": {
-      "patients": 20,
-      "samples": 20,
-      "events": 14,
-      "c_index": 0.5934959349593496,
-      "brier365": 0.3861138118735293,
-      "brier_na_reason": null
-    },
-    "H2": {
-      "patients": 14,
-      "samples": 14,
-      "events": 10,
-      "c_index": 0.5849056603773585,
-      "brier365": 0.29836676615397933,
-      "brier_na_reason": null
-    },
-    "H3": {
-      "patients": 8,
-      "samples": 8,
-      "events": 6,
-      "c_index": 0.4,
-      "brier365": 0.5760833725983473,
-      "brier_na_reason": null
-    }
-  }
-}

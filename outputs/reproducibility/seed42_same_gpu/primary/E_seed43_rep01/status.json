@@ -1,0 +1,10 @@
+{
+  "variant": "E",
+  "seed": 43,
+  "replicate_id": "rep01",
+  "gpu_uuid": "GPU-89a74482-f4e5-710d-b134-cc20a8f53e56",
+  "state": "complete",
+  "train_start_utc": "2026-10-04T15:17:57.507933+00:00",
+  "evaluate_start_utc": "2026-10-04T22:58:07.873689+00:00",
+  "complete_utc": "2026-10-04T22:58:51.039726+00:00"
+}

@@ -1,45 +1,31 @@
-# Same-GPU seed42 replicate audit
+# Same-GPU reproducibility audit
 
-## Preservation and selection
+## Current results and selection
 
-- Recover the original step2400 A/B/C/D seed42 tracked artifacts from commit `6584f6d` as `historical_rep01`.
-- Snapshot the current A/B/C/D seed42 results as `historical_rep02`, and current E seed42 as `historical_rep01`. Include available checkpoints, prediction CSVs and histories, with SHA256 manifests. Leave all original output directories unchanged.
-- The old checkpoints, history CSV and patient predictions were overwritten during the earlier rerun and were not tracked by Git. Do not substitute new artifacts for them or reconstruct historical hardware metadata from the current machine.
-- New deterministic runs use isolated `A_seed42_rep01`, `A_seed42_rep02`, etc. Keep replicate identifiers distinct from random seeds.
-- Preselect `rep01` for the final seed42 comparison; `rep02` checks reproducibility. Never select whichever gives better test results or count two seed42 replicates as two seeds.
+A/B/E seed42 each have independent rep01/rep02 runs, with rep01 chosen before looking at test performance. Rep02 checks reproducibility, not an additional independent random seed. Existing replicate directories cannot be overwritten or silently resumed.
 
-## Fixed execution protocol
+The completed audit retains gate files, resolved configs, run/evaluation metadata, metrics, patient predictions and the E42/43/44-versus-B42/43/44 comparison. Earlier experiment families, old-protocol E42, full historical archives, survival diagnostics and legacy configs/docs were retired only after all gates and final comparison existed. The pre-cleanup tag preserves Git history; cleanup_manifest.json records recoverable local backup paths and retained controls.
 
-Run **A42 rep01 → A42 rep02 → B42 rep01 → B42 rep02 → E42 rep01 → E42 rep02**, sequentially on one physical GPU pinned by UUID. Retain the original datasets, split, loss definitions, 2400 optimizer updates, warmup 240, validation interval 24, and `best_val_loss.pt` selected by minimum validation total loss strictly after warmup (earliest tie). Do not switch to the C-index checkpoint.
+The user directed deletion, not archival, of non-resumable incomplete SHM-failure artifacts on 2026-10-04. Their checkpoints lacked optimizer/scheduler/RNG resume state; F42/F44 had not reached checkpoint creation. E42/E43/F42/F44 restart from scratch without changing the frozen training/configuration/DataLoader protocol. E42 rep01/rep02 remain sequential on original GPU0. The recovery governor permits at most three combined E/F tasks and requires >=80 GiB free SHM before launch on an idle assigned GPU. recovery_shm.json retains only the new scheduling state, not failed run contents. Complete numerical-instability results remain retained and gate-controlled.
 
-For new runs: strict `torch.use_deterministic_algorithms(True, warn_only=False)`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`, fixed startup `PYTHONHASHSEED`, cuDNN deterministic on / benchmark off, TF32 off, math-only SDPA attention, independent seeded DataLoader generators and worker Python/NumPy seeds. Existing launchers retain their historical numerical protocol unless explicitly passed `--deterministic`.
+## Frozen execution and gates
 
-Write `run_metadata.json` and `evaluation_metadata.json` with GPU model/UUID, driver inventory, CUDA/cuDNN/PyTorch/Python/dependency versions, effective numerical settings, configuration/source/data-manifest fingerprints, pretrained paths and initialization fingerprint. Record cumulative sample-order fingerprints at each validation and in each checkpoint. MRI manifest hashing does not hash every cached voxel file; keep cache contents immutable throughout the audit.
+Run A42 twice, B42 twice, then E42 twice sequentially on one GPU pinned by UUID. Keep the original split, models, losses, 2400 updates, warmup240, batch16 and validation interval24. Primary checkpoint is minimum validation total loss strictly after warmup, earliest tie; never replace it with the diagnostic C-index checkpoint.
 
-These controls follow [PyTorch 2.7 reproducibility guidance](https://docs.pytorch.org/docs/2.7/notes/randomness.html). They can slow execution; they are not a guarantee across library releases or GPU platforms. Unsupported nondeterministic operations fail visibly instead of silently weakening the protocol.
+Strict deterministic algorithms fail visibly on unsupported operators. Use fixed startup PYTHONHASHSEED, CUBLAS_WORKSPACE_CONFIG=:4096:8, cuDNN deterministic on / benchmark off, TF32 off, math-only SDPA and seeded DataLoader generators/workers. Record effective numerical settings, GPU model/UUID, driver/CUDA/cuDNN/PyTorch/Python/dependency versions, data/source fingerprints, initialization and cumulative batch-order fingerprints. Cache-manifest hashing does not hash every voxel file; keep cached data immutable.
 
-## Predeclared stability gate
+Require equal source/config/data/version/GPU/init/order fingerprints and selected checkpoint step. H1/H2/H3 MSE and H3/H1 relative difference must be ≤1%; cosine/C-index/Brier absolute difference ≤0.001; maximum within-patient-mean MSE relative difference ≤5%. Relative difference is abs(a-b)/max(abs(a),abs(b),1e-12). These are operational reproducibility tolerances, not significance tests.
 
-Require identical source/configuration/data fingerprints, environment versions, GPU UUID, initial trainable parameters and complete batch order; strict deterministic mode must be enabled in both runs. Require the same primary-checkpoint optimizer step.
+If any pair fails, retain current runs, report first numerical/order divergence and checkpoint differences, and quarantine speculative E43/44 results: do not produce a formal comparison or perform cleanup. Historical-archive deletion is user-directed housekeeping, not proof that performance-based statistical exclusion is justified.
 
-- H1/H2/H3 MSE and H3/H1: relative difference ≤1%, using `abs(a-b)/max(abs(a),abs(b),1e-12)`.
-- H1/H2/H3 cosine similarity, C-index and Brier365: absolute difference ≤0.001.
-- All prediction trajectory keys and endpoints must match; maximum relative difference of within-patient mean MSE ≤5%.
+## Paired comparison
 
-These are operational reproducibility tolerances, not significance thresholds. If a pair fails, report environment/init/order mismatches, first training/validation-history divergence and selected checkpoint steps, retain every run, and hold E43/44 pending diagnosis. Inspect CUDA kernels, hardware, worker/batch order and validation selection using those diagnostics; do not assert a root cause without evidence.
+The user approved a scheduling amendment on 2026-10-04: E43/44 start speculatively on same-model GPUs1/2 while E42 rep01/02 remain sequential on GPU0. The frozen training source/configuration and all deterministic settings are unchanged; per-run GPU UUIDs and the amendment are recorded in parallel_schedule.json. Only after all A/B/E gates pass may these results enter the formal E42/43/44-versus-B42 rep01 and retained B43/44 comparison. B43/44 use the historical numerical protocol and lack deterministic environment metadata: this is seed-matched, not fully execution-protocol-matched. Do not silently infer missing hardware versions or claim causal confirmation.
 
-After stable A repeats, the original H3 MSE `0.626819` may be labeled a **candidate anomalous historical replicate** if its relative distance to the stable repeat exceeds 25%. That label never automatically excludes it. Deterministic settings change the execution protocol, and the old run lacks key artifacts; stable new runs alone do not justify performance-based removal.
+Report H1/H2/H3 MSE, cosine, C-index, Brier365 and H3/H1, with seed-paired E-minus-B differences. Average trajectories within each patient before patient-level MSE/cosine differences; use fixed primary windows for survival predictions. Average each patient's differences across seeds without treating windows/seeds as extra independent patients. Eight patients and three seeds remain exploratory.
 
-## Conditional continuation and paired analysis
+## Artifacts and monitoring
 
-Only if all A/B/E pairs pass, run E43 and E44 on the same GPU, then compare E42/43/44 against B42/43/44. Use deterministic B42 rep01; B43/44 are the existing historical controls. Explicitly label that execution-protocol mismatch, even though the random seeds and test cohort match. Fully protocol-matched confirmation would require additional B43/44 reruns, which are not automatically added to this request.
+Use outputs/reproducibility/seed42_same_gpu/ for current results, with comparison/ for paired reports. Keep B43/44 at their documented control paths while reports reference them. Git ignores outputs/**/*.log and weights; compact prediction and patient-difference CSVs are explicitly retained. Detailed local logs and history CSVs remain available for diagnosis.
 
-Output H1/H2/H3 MSE, cosine, C-index, Brier365, H3/H1 and seed-paired E-minus-B differences. Average windows within each patient before computing patient-level latent MSE/cosine differences; use the fixed primary window for risk/survival probability differences. Average each patient's differences across seeds without treating windows or seeds as extra independent patients. Eight test patients and three seeds support descriptive exploration, not confirmatory claims.
-
-## Running and monitoring
-
-```bash
-bash scripts/reproducibility/run_same_gpu.sh 0
-```
-
-Outputs: `outputs/reproducibility/seed42_same_gpu/`. Inspect `pipeline_status.json`, `audit_summary.md`, each replicate's `status.json` / `history.csv`, and `A/B/E_seed42_stability.json`. Conditional final outputs are under `comparison/`. Existing directories cannot be overwritten or silently resumed; a failed run stays preserved for diagnosis.
+The archive command only reads an existing archive index; it never reconstructs deleted experiment families from Git or copies legacy results into a new audit. Audit summaries work without historical/.

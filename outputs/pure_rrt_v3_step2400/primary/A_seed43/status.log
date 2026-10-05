@@ -1,3 +1,0 @@
-[step2400] variant=A seed=43 gpu=2 train_start=2026-10-01T14:22:40Z
-[step2400] variant=A seed=43 evaluate_start=2026-10-01T17:04:08Z
-[step2400] variant=A seed=43 complete=2026-10-01T17:04:53Z

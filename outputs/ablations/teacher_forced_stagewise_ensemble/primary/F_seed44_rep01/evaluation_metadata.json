@@ -1,7 +1,7 @@
 {
-  "created_at_utc": "2026-10-03T14:14:33.393539+00:00",
-  "variant": "B",
-  "seed": 42,
+  "created_at_utc": "2026-10-05T10:50:22.326129+00:00",
+  "variant": "F",
+  "seed": 44,
   "replicate_id": "rep01",
   "python": "3.10.20",
   "platform": "Linux-6.8.0-71-generic-x86_64-with-glibc2.39",
@@ -18,7 +18,7 @@
   "gpu": {
     "logical_index": 0,
     "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
-    "uuid": "8b31b6ad-e100-275f-8313-dc07b2f2635a",
+    "uuid": "fb5a3739-6092-c4b3-da34-d012d97dbd96",
     "compute_capability": [
       12,
       0
@@ -35,9 +35,9 @@
     "6, GPU-c200f301-fb51-34c4-f089-f65323a632af, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
     "7, GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05"
   ],
-  "cuda_visible_devices": "GPU-8b31b6ad-e100-275f-8313-dc07b2f2635a",
+  "cuda_visible_devices": "GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96",
   "environment": {
-    "PYTHONHASHSEED": "42",
+    "PYTHONHASHSEED": "44",
     "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
     "OMP_NUM_THREADS": "1",
     "MKL_NUM_THREADS": "1"
@@ -60,13 +60,13 @@
     "batch_size": 16,
     "worker_init_fn": "seed_worker",
     "independent_validation_generator": true,
-    "shuffle_seed": 42,
+    "shuffle_seed": 44,
     "drop_last": false,
     "persistent_workers": false
   },
-  "git_commit": "98713061c4a9f4b5c9326ba5c856448f80ce4bc7",
-  "tracked_source_dirty": true,
-  "source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+  "git_commit": "970534457eb4391e60e0fbbea2e3ca8433d430ee",
+  "tracked_source_dirty": false,
+  "source_sha256": "e3020753898e555653d6f564a5977fb39aaace808831c0a12da15f3c71d88589",
   "data_fingerprints": {
     "timeline_json": {
       "path": "/data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json",
@@ -82,15 +82,38 @@
     }
   },
   "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
-  "config_sha256": "2947b93ae8929e8c33f6491cce82c5a162fc3fa2b13f13dee27a42a1a0e59ba9",
+  "config_sha256": "e3448da911015506dc07007553caed43272872b02585218b1a37c761fba269fe",
   "pretrained_paths": {
     "brainiac_ckpt": "/home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt",
     "text_encoder_name": "/data/tanyuejun/model/medgemma-4b-it"
   },
   "checkpoint_selection": "minimum validation_total_loss strictly after warmup; earliest tie",
-  "initial_trainable_state_sha256": "f59cf5fe6b77f3a2be0365271b919cece856fcf709cf1e05864c8229709c9c2b",
-  "training_complete_at_utc": "2026-10-03T21:48:31.234723+00:00",
-  "batch_order_sha256": "99248759dd7ef18496c25372bafe7c8c55a9a64bca8ee7af164495e271b5d0e3",
-  "optimizer_steps": 2400,
-  "samples_seen": 35520
+  "core_source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+  "extension_sha256": "01782836f3d95dd301acdff3a82aa3be2b808aaf4ba464225356f8bfbfa90bc6",
+  "extension_files_sha256": {
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/__init__.py": "265bdcc6ba75c1a6a31d46ab5833ed94989f379cb009b20774945065cb8d2d1d",
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/__main__.py": "92e270a44bc28598f747c465e1bfb7f41b6ae93648d5ca68ea896b9bd248d804",
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/protocol.py": "e21c431d23473d7a5689a40a0332f7522e24fdd75e9690fbae34cb04359038c0",
+    "extensions/teacher_forced_ensemble/configs/F.yaml": "ed9fc0a5eb203a5ea72b7cc1aa7f5c9d124b4c5e612d058cf4efc10caacfbbe1",
+    "extensions/teacher_forced_ensemble/tests/test_protocol.py": "d05d2f0c276b562f704af2707dba7432e0c0c926af4ecac23e1b4499cb683634"
+  },
+  "experiment_definition": {
+    "name": "Teacher-forced Stage-wise Ensemble",
+    "ensemble_size": 3,
+    "dynamics_implementation": "unchanged clarity_rrt_v3.model.StagewiseDynamics (C/D implementation)",
+    "shared_modules": [
+      "MRI encoder",
+      "text encoder",
+      "survival head"
+    ],
+    "training_scheme": "teacher_forced_stagewise",
+    "rrt_training": false,
+    "teacher_inputs": [
+      "s0",
+      "stopgrad(s1_true)",
+      "stopgrad(s2_true)"
+    ],
+    "targets_detached": true,
+    "evaluation": "independent member recursive rollout, then equal-weight fusion"
+  }
 }

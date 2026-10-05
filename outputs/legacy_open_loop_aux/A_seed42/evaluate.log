@@ -1,55 +1,0 @@
-WARNING: overwriting environment variables set in the machine
-overwriting variable ['PYTHONPATH']
-Loading weights:   0%|          | 0/883 [00:00<?, ?it/s]Loading weights:   0%|          | 1/883 [00:00<06:28,  2.27it/s]Loading weights:   0%|          | 3/883 [00:00<02:14,  6.52it/s]Loading weights:   2%|▏         | 17/883 [00:00<00:21, 39.57it/s]Loading weights:   4%|▎         | 31/883 [00:00<00:13, 64.81it/s]Loading weights:   6%|▌         | 50/883 [00:00<00:08, 98.32it/s]Loading weights:   7%|▋         | 63/883 [00:00<00:07, 106.86it/s]Loading weights:   9%|▉         | 81/883 [00:01<00:06, 120.81it/s]Loading weights:  11%|█         | 95/883 [00:01<00:06, 125.47it/s]Loading weights:  12%|█▏        | 109/883 [00:01<00:06, 126.79it/s]Loading weights:  14%|█▍        | 123/883 [00:01<00:06, 121.85it/s]Loading weights:  17%|█▋        | 146/883 [00:01<00:05, 145.56it/s]Loading weights:  18%|█▊        | 161/883 [00:01<00:04, 144.92it/s]Loading weights:  21%|██        | 183/883 [00:01<00:04, 165.38it/s]Loading weights:  23%|██▎       | 200/883 [00:01<00:04, 147.00it/s]Loading weights:  24%|██▍       | 216/883 [00:01<00:04, 149.84it/s]Loading weights:  27%|██▋       | 234/883 [00:02<00:04, 156.04it/s]Loading weights:  28%|██▊       | 250/883 [00:02<00:04, 152.51it/s]Loading weights:  30%|███       | 266/883 [00:02<00:04, 143.70it/s]Loading weights:  32%|███▏      | 283/883 [00:02<00:03, 150.12it/s]Loading weights:  34%|███▍      | 300/883 [00:02<00:03, 155.40it/s]Loading weights:  36%|███▌      | 316/883 [00:02<00:03, 146.30it/s]Loading weights:  37%|███▋      | 331/883 [00:02<00:03, 144.31it/s]Loading weights:  39%|███▉      | 348/883 [00:02<00:03, 150.61it/s]Loading weights:  41%|████      | 364/883 [00:02<00:03, 147.06it/s]Loading weights:  43%|████▎     | 380/883 [00:03<00:03, 147.79it/s]Loading weights:  45%|████▍     | 395/883 [00:03<00:03, 140.02it/s]Loading weights:  47%|████▋     | 414/883 [00:03<00:03, 151.73it/s]Loading weights:  49%|████▉     | 432/883 [00:03<00:02, 155.61it/s]Loading weights:  52%|█████▏    | 462/883 [00:03<00:02, 195.17it/s]Loading weights:  57%|█████▋    | 502/883 [00:03<00:01, 253.32it/s]Loading weights:  60%|██████    | 532/883 [00:03<00:01, 265.96it/s]Loading weights:  65%|██████▍   | 570/883 [00:03<00:01, 297.34it/s]Loading weights:  69%|██████▉   | 610/883 [00:03<00:00, 326.04it/s]Loading weights:  73%|███████▎  | 649/883 [00:04<00:00, 344.72it/s]Loading weights:  78%|███████▊  | 688/883 [00:04<00:00, 356.95it/s]Loading weights:  82%|████████▏ | 727/883 [00:04<00:00, 359.57it/s]Loading weights:  87%|████████▋ | 764/883 [00:04<00:00, 299.91it/s]Loading weights:  90%|█████████ | 796/883 [00:04<00:00, 295.35it/s]Loading weights:  95%|█████████▍| 835/883 [00:04<00:00, 319.30it/s]Loading weights:  99%|█████████▉| 873/883 [00:04<00:00, 335.39it/s]Loading weights: 100%|██████████| 883/883 [00:04<00:00, 185.87it/s]
-trainable params: 3,223,552 || all params: 4,303,303,024 || trainable%: 0.0749
-
-Model statistics:
-  Total parameters:     2,629,284,338
-  Trainable parameters: 22,381,442
-  MRI encoder LoRA:     589,824
-{
-  "variant": "A",
-  "seed": 42,
-  "checkpoint": "runs/A_seed42/best.pt",
-  "checkpoint_epoch": 24,
-  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
-  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
-  "resources": {
-    "training_seconds": 15008.01840584015,
-    "peak_gpu_gb": 25.4836608
-  },
-  "direct": {
-    "patients": 20,
-    "samples": 107,
-    "events": 87,
-    "c_index": 0.5897560975609756,
-    "brier365": 0.3557514095803668,
-    "brier_na_reason": null
-  },
-  "recursive": {
-    "H1": {
-      "patients": 20,
-      "samples": 20,
-      "events": 14,
-      "c_index": 0.5853658536585366,
-      "brier365": 0.3723423166580592,
-      "brier_na_reason": null
-    },
-    "H2": {
-      "patients": 14,
-      "samples": 14,
-      "events": 10,
-      "c_index": 0.6415094339622641,
-      "brier365": 0.20386885288669693,
-      "brier_na_reason": null
-    },
-    "H3": {
-      "patients": 8,
-      "samples": 8,
-      "events": 6,
-      "c_index": 0.4666666666666667,
-      "brier365": 0.6214219200431333,
-      "brier_na_reason": null
-    }
-  }
-}

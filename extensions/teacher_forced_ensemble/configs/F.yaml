@@ -1,0 +1,44 @@
+experiment_kind: teacher_forced_stagewise_ensemble_ablation
+upstream_root: third_party/CLARITY
+upstream_commit: dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
+output_root: outputs/ablations/teacher_forced_stagewise_ensemble
+deterministic: true
+
+data:
+  timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
+  mri_data_dir: /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post
+  mri_cache_dir: /dev/shm/clarity_mri_cache
+  split_file: data/splits.json
+
+model:
+  brainiac_ckpt: /home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt
+  brainiac_tokens: 8
+  brainiac_lora_r: 8
+  latent_dim: 768
+  num_modalities: 32
+  text_encoder_name: /data/tanyuejun/model/medgemma-4b-it
+  freeze_text_encoder: false
+  dropout: 0.3
+
+variants:
+  F: {training_scheme: teacher_forced_stagewise, ensemble_size: 3}
+
+training:
+  total_steps: 2400
+  warmup_steps: 240
+  validation_interval_steps: 24
+  batch_size: 16
+  evaluation_batch_size: 16
+  num_workers: 2
+  seeds: [42, 43, 44]
+  lr: 2.0e-4
+  text_lr: 1.0e-4
+  text_proj_lr: 5.0e-4
+  vision_lr: 5.0e-5
+  survival_weight_decay: 0.01
+  grad_clip_norm: 2.0
+  lambda_l1: 0.5
+  lambda_cox: 1.0
+  lambda_bce: 1.0
+  cf_weight: 1.0
+  cf_cos_margin: 0.9

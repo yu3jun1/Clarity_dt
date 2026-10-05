@@ -1,0 +1,31 @@
+{
+  "state": "complete",
+  "prepared_at_utc": "2026-10-04T15:15:30.739371+00:00",
+  "source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+  "discarded_nonresumable_paths": [
+    "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/primary/E_seed42_rep01",
+    "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/primary/E_seed43_rep01",
+    "/home/tanyuejun/Clarity_dt/outputs/ablations/teacher_forced_stagewise_ensemble/primary/F_seed42_rep01",
+    "/home/tanyuejun/Clarity_dt/outputs/ablations/teacher_forced_stagewise_ensemble/primary/F_seed44_rep01",
+    "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/interrupted/E_seed42_rep01_20261004_handover"
+  ],
+  "removed_bytes": 538338715,
+  "failed_artifacts_archived": false,
+  "max_concurrent": 3,
+  "min_free_shm_gib_at_launch": 80,
+  "same_gpu_seed42_pair": "GPU-8b31b6ad-e100-275f-8313-dc07b2f2635a",
+  "pending_jobs": [],
+  "updated_at_utc": "2026-10-05T10:55:31.805400+00:00",
+  "coordinator_pid": 1907129,
+  "active_jobs": [],
+  "shm_free_gib": 192.42375946044922,
+  "worker_pids": {
+    "E_43_rep01": 1907257,
+    "F_42_rep01": 2391331,
+    "E_42_rep01": 2612396,
+    "F_44_rep01": 3466871,
+    "E_42_rep02": 3659737
+  },
+  "E_finalized": true,
+  "F_finalized": true
+}

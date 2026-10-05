@@ -5,14 +5,14 @@ __pycache__/
 .coverage
 .idea/
 .vscode/
-
 # External upstream source (managed independently)
 /third_party/CLARITY/
 
 # Experiment outputs and model/data artifacts
 
-/outputs/stagewise_recursive/ablation/
 experiments/
+!docs/experiments/
+!docs/experiments/*.md
 *.ckpt
 *.pth
 *.csv
@@ -20,6 +20,16 @@ experiments/
 *.nii
 *.nii.gz
 *.lock
+# Detailed logs remain local; already tracked logs are retired in the guarded cleanup commit.
+outputs/**/*.log
+# Compact predictions and paired analyses remain versionable; bulk/history CSVs stay ignored.
+!outputs/reproducibility/seed42_same_gpu/primary/**/recursive_predictions.csv
+!outputs/reproducibility/seed42_same_gpu/comparison/patient_level_differences.csv
+!outputs/ablations/teacher_forced_stagewise_ensemble/primary/**/recursive_predictions.csv
+!outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/**/recursive_predictions.csv
+!outputs/ablations/teacher_forced_stagewise_ensemble/comparison/patient_level_differences.csv
+!outputs/pure_rrt_v3_step2400/primary/B_seed43/recursive_predictions.csv
+!outputs/pure_rrt_v3_step2400/primary/B_seed44/recursive_predictions.csv
 # Local environments and secrets
 .env
 .venv/

@@ -164,3 +164,14 @@ def test_history_diagnostics_first_divergence(tmp_path):
     result = history_diagnostics(left, right)
     assert result["first_numerical_divergence_step"] == 48
     assert result["first_batch_order_divergence_step"] == 48
+
+
+def test_compact_audit_summary_does_not_require_or_recreate_history(tmp_path):
+    from clarity_rrt_v3.replicate_audit import preserve_history, write_audit_summary
+
+    assert preserve_history(tmp_path)["replicates"] == []
+    write_audit_summary(tmp_path, {})
+    assert (tmp_path / "audit_summary.md").is_file()
+    assert not (tmp_path / "historical").exists()
+    assert not (tmp_path / "historical_replicates.json").exists()
+    assert not (tmp_path / "old_A_replicate_classification.json").exists()

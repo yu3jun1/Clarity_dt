@@ -1,0 +1,156 @@
+{
+  "variant": "F",
+  "seed": 43,
+  "replicate_id": "rep01",
+  "deterministic_requested": true,
+  "training_scheme": "teacher_forced_stagewise",
+  "optimizer_steps": 2400,
+  "warmup_steps": 240,
+  "samples_seen": 35520,
+  "effective_dataset_passes": 480.0,
+  "checkpoint_optimizer_step": 432,
+  "checkpoint_samples_seen": 6396,
+  "checkpoint_effective_dataset_passes": 86.43243243243244,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 1.56973135471344,
+    "latent": 0.16532640159130096,
+    "cox": 1.4511744976043701,
+    "bce": 0.035893697291612625,
+    "cf": 0.0,
+    "c_index": 0.75
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.14234933909028769,
+      "cosine_similarity": 0.9260363057255745,
+      "c_index": 0.5294117647058824,
+      "brier365": 0.9737555292177382
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.12896217638626695,
+      "cosine_similarity": 0.9331592135131359,
+      "c_index": 0.7333333333333333,
+      "brier365": 0.857082158111105
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.14562685368582606,
+      "cosine_similarity": 0.9247349761426449,
+      "c_index": 0.8,
+      "brier365": 0.24385673772868682
+    }
+  },
+  "representation_sanity": {
+    "observed_latent_variance": 0.05963635444641113,
+    "observed_transition_l2_mean": 37.34228515625,
+    "encoder_trainable_parameter_rms_delta": 0.005966704698449217
+  },
+  "error_accumulation": 0.0032775145955383778,
+  "h3_h1_mse_ratio": 1.0230244454697437,
+  "uncertainty": {
+    "H1": {
+      "latent_disagreement_mean": 0.008628105715615675,
+      "latent_disagreement_error_pearson": -0.2078443772158788,
+      "survival_probability_disagreement_mean": 0.017881074629258364
+    },
+    "H2": {
+      "latent_disagreement_mean": 0.010167583561269566,
+      "latent_disagreement_error_pearson": -0.11718950467862708,
+      "survival_probability_disagreement_mean": 0.0211296615707397
+    },
+    "H3": {
+      "latent_disagreement_mean": 0.018116901395842433,
+      "latent_disagreement_error_pearson": 0.3501813074419675,
+      "survival_probability_disagreement_mean": 0.04168787848902866
+    }
+  },
+  "member_diagnostics": {
+    "H1": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.1497219572775066,
+        "cosine_similarity": 0.9223029799759388
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.15152469417080283,
+        "cosine_similarity": 0.9213246665894985
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.15168567607179284,
+        "cosine_similarity": 0.9212002977728844
+      }
+    ],
+    "H2": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.13745853956788778,
+        "cosine_similarity": 0.9288144186139107
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.13670882675796747,
+        "cosine_similarity": 0.9291652031242847
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.14322190079838037,
+        "cosine_similarity": 0.9258415959775448
+      }
+    ],
+    "H3": [
+      {
+        "member_index": 0,
+        "latent_mse": 0.16550432844087481,
+        "cosine_similarity": 0.9152363836765289
+      },
+      {
+        "member_index": 1,
+        "latent_mse": 0.1397368088364601,
+        "cosine_similarity": 0.9278434067964554
+      },
+      {
+        "member_index": 2,
+        "latent_mse": 0.18599011469632387,
+        "cosine_similarity": 0.9044841937720776
+      }
+    ]
+  },
+  "ensemble_size": 3,
+  "rrt_training": false,
+  "extension_provenance": {
+    "source_sha256": "e3020753898e555653d6f564a5977fb39aaace808831c0a12da15f3c71d88589",
+    "core_source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+    "extension_sha256": "01782836f3d95dd301acdff3a82aa3be2b808aaf4ba464225356f8bfbfa90bc6"
+  }
+}

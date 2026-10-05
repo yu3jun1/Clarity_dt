@@ -1,6 +1,6 @@
 {
-  "created_at_utc": "2026-10-03T14:14:33.393539+00:00",
-  "variant": "B",
+  "created_at_utc": "2026-10-04T19:32:34.443746+00:00",
+  "variant": "E",
   "seed": 42,
   "replicate_id": "rep01",
   "python": "3.10.20",
@@ -64,8 +64,8 @@
     "drop_last": false,
     "persistent_workers": false
   },
-  "git_commit": "98713061c4a9f4b5c9326ba5c856448f80ce4bc7",
-  "tracked_source_dirty": true,
+  "git_commit": "970534457eb4391e60e0fbbea2e3ca8433d430ee",
+  "tracked_source_dirty": false,
   "source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
   "data_fingerprints": {
     "timeline_json": {
@@ -82,14 +82,14 @@
     }
   },
   "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
-  "config_sha256": "2947b93ae8929e8c33f6491cce82c5a162fc3fa2b13f13dee27a42a1a0e59ba9",
+  "config_sha256": "c5117a5c8939e3000436b135b6120699d893b9e7cfa0f7003b3cd4097daa09bb",
   "pretrained_paths": {
     "brainiac_ckpt": "/home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt",
     "text_encoder_name": "/data/tanyuejun/model/medgemma-4b-it"
   },
   "checkpoint_selection": "minimum validation_total_loss strictly after warmup; earliest tie",
   "initial_trainable_state_sha256": "f59cf5fe6b77f3a2be0365271b919cece856fcf709cf1e05864c8229709c9c2b",
-  "training_complete_at_utc": "2026-10-03T21:48:31.234723+00:00",
+  "training_complete_at_utc": "2026-10-05T03:07:45.517768+00:00",
   "batch_order_sha256": "99248759dd7ef18496c25372bafe7c8c55a9a64bca8ee7af164495e271b5d0e3",
   "optimizer_steps": 2400,
   "samples_seen": 35520

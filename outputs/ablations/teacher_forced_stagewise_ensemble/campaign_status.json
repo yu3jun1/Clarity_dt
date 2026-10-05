@@ -1,0 +1,11 @@
+{
+  "state": "complete",
+  "updated_at_utc": "2026-10-05T10:55:31.804894+00:00",
+  "recovery_schedule": "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/recovery_shm.json",
+  "completed_seeds": [
+    42,
+    43,
+    44
+  ],
+  "pending_seeds": []
+}

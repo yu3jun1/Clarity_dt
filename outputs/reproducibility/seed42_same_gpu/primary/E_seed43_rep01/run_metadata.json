@@ -1,7 +1,7 @@
 {
-  "created_at_utc": "2026-10-03T14:14:33.393539+00:00",
-  "variant": "B",
-  "seed": 42,
+  "created_at_utc": "2026-10-04T15:17:59.627651+00:00",
+  "variant": "E",
+  "seed": 43,
   "replicate_id": "rep01",
   "python": "3.10.20",
   "platform": "Linux-6.8.0-71-generic-x86_64-with-glibc2.39",
@@ -18,7 +18,7 @@
   "gpu": {
     "logical_index": 0,
     "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
-    "uuid": "8b31b6ad-e100-275f-8313-dc07b2f2635a",
+    "uuid": "89a74482-f4e5-710d-b134-cc20a8f53e56",
     "compute_capability": [
       12,
       0
@@ -35,9 +35,9 @@
     "6, GPU-c200f301-fb51-34c4-f089-f65323a632af, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
     "7, GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05"
   ],
-  "cuda_visible_devices": "GPU-8b31b6ad-e100-275f-8313-dc07b2f2635a",
+  "cuda_visible_devices": "GPU-89a74482-f4e5-710d-b134-cc20a8f53e56",
   "environment": {
-    "PYTHONHASHSEED": "42",
+    "PYTHONHASHSEED": "43",
     "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
     "OMP_NUM_THREADS": "1",
     "MKL_NUM_THREADS": "1"
@@ -60,12 +60,12 @@
     "batch_size": 16,
     "worker_init_fn": "seed_worker",
     "independent_validation_generator": true,
-    "shuffle_seed": 42,
+    "shuffle_seed": 43,
     "drop_last": false,
     "persistent_workers": false
   },
-  "git_commit": "98713061c4a9f4b5c9326ba5c856448f80ce4bc7",
-  "tracked_source_dirty": true,
+  "git_commit": "970534457eb4391e60e0fbbea2e3ca8433d430ee",
+  "tracked_source_dirty": false,
   "source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
   "data_fingerprints": {
     "timeline_json": {
@@ -82,15 +82,15 @@
     }
   },
   "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
-  "config_sha256": "2947b93ae8929e8c33f6491cce82c5a162fc3fa2b13f13dee27a42a1a0e59ba9",
+  "config_sha256": "16d47b5a55233b46d7ebf60aaf30b39ac0cdd4ceff7b92d6e1556dbe810240ae",
   "pretrained_paths": {
     "brainiac_ckpt": "/home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt",
     "text_encoder_name": "/data/tanyuejun/model/medgemma-4b-it"
   },
   "checkpoint_selection": "minimum validation_total_loss strictly after warmup; earliest tie",
-  "initial_trainable_state_sha256": "f59cf5fe6b77f3a2be0365271b919cece856fcf709cf1e05864c8229709c9c2b",
-  "training_complete_at_utc": "2026-10-03T21:48:31.234723+00:00",
-  "batch_order_sha256": "99248759dd7ef18496c25372bafe7c8c55a9a64bca8ee7af164495e271b5d0e3",
+  "initial_trainable_state_sha256": "2f8dd1e8e0516999e5536d62ffc846f66b7616c4cb0db6c9f717ef585211f742",
+  "training_complete_at_utc": "2026-10-04T22:58:05.418450+00:00",
+  "batch_order_sha256": "8ce69fc39341d6a5c3ea24c2bcfbe159c4c3763b663f63d7295936a524166c1e",
   "optimizer_steps": 2400,
   "samples_seen": 35520
 }

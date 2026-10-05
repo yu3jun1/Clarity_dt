@@ -8,7 +8,6 @@ import fcntl
 import json
 import math
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -16,13 +15,11 @@ from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-from .reproducibility import file_sha256, source_sha256, utc_now
+from .reproducibility import source_sha256, utc_now
 
 
 DEFAULT_ROOT = Path("outputs/reproducibility/seed42_same_gpu")
-OLD_COMMIT = "6584f6d"
 MAIN_ROOT = Path("outputs/pure_rrt_v3_step2400")
-TF_ROOT = Path("outputs/ablations/teacher_forced_stagewise")
 METRIC_NAMES = ("latent_mse", "cosine_similarity", "c_index", "brier365")
 # These operational tolerances are fixed before seeing the new replicates.
 GATE_POLICY = {
@@ -32,7 +29,7 @@ GATE_POLICY = {
     "same_selected_checkpoint_step_required": True,
     "same_initial_state_batch_order_device_protocol_required": True,
     "formal_replicate": "rep01 (preselected, never the better-scoring run)",
-    "old_A_exclusion": "never automatic; candidate anomaly only, all historical runs retained",
+    "historical_archives_policy": "retired archives are never automatically recreated",
 }
 
 
@@ -165,51 +162,11 @@ def assess_pair(left: Path, right: Path) -> dict[str, Any]:
 
 
 def preserve_history(root: Path) -> dict[str, Any]:
-    manifest_path = root / "historical_replicates.json"
-    if manifest_path.exists():
-        return read_json(manifest_path)
-    entries = []
-    for variant in "ABCD":
-        source = MAIN_ROOT / "primary" / f"{variant}_seed42"
-        destination = root / "historical" / f"{variant}_seed42_historical_rep01"
-        destination.mkdir(parents=True, exist_ok=False)
-        files = subprocess.check_output(
-            ["git", "ls-tree", "-r", "--name-only", OLD_COMMIT, "--", str(source)], text=True,
-        ).splitlines()
-        for tracked in files:
-            (destination / Path(tracked).name).write_bytes(subprocess.check_output(
-                ["git", "show", f"{OLD_COMMIT}:{tracked}"]
-            ))
-        entries.append({
-            "variant": variant, "seed": 42, "replicate_id": "historical_rep01",
-            "path": str(destination), "provenance": f"git:{OLD_COMMIT}",
-            "original_path": str(source), "status": "retained_unadjudicated",
-            "missing_artifacts": ["original checkpoints", "history.csv", "recursive_predictions.csv"],
-            "environment_metadata": "not recorded historically; do not infer from current host",
-        })
-        current = root / "historical" / f"{variant}_seed42_historical_rep02"
-        shutil.copytree(source, current)
-        entries.append({
-            "variant": variant, "seed": 42, "replicate_id": "historical_rep02",
-            "path": str(current), "provenance": "current completed rerun, full filesystem snapshot",
-            "original_path": str(source), "status": "retained_unadjudicated",
-            "environment_metadata": "not recorded historically; do not infer from current host",
-        })
-    source = TF_ROOT / "primary" / "E_seed42"
-    destination = root / "historical" / "E_seed42_historical_rep01"
-    shutil.copytree(source, destination)
-    entries.append({
-        "variant": "E", "seed": 42, "replicate_id": "historical_rep01",
-        "path": str(destination), "provenance": "current completed run, full filesystem snapshot",
-        "status": "retained_unadjudicated", "environment_metadata": "not recorded historically",
-    })
-    for entry in entries:
-        directory = Path(entry["path"])
-        entry["artifact_sha256"] = {path.name: file_sha256(path) for path in sorted(directory.iterdir()) if path.is_file()}
-        write_json(directory / "replicate_provenance.json", entry)
-    manifest = {"created_at_utc": utc_now(), "replicates": entries, "no_original_outputs_modified": True}
-    write_json(manifest_path, manifest)
-    return manifest
+    """Read an existing archive index, but never recreate retired experiments."""
+    manifest = root / "historical_replicates.json"
+    if manifest.exists():
+        return read_json(manifest)
+    return {"replicates": [], "historical_archives_retired": True}
 
 
 def seed_matched_comparison(pairs: Sequence[tuple[int, Path, Path]], destination: Path) -> dict[str, Any]:
@@ -305,43 +262,25 @@ def seed_matched_comparison(pairs: Sequence[tuple[int, Path, Path]], destination
 
 
 def write_audit_summary(root: Path, gates: Mapping[str, Any]) -> None:
-    historical = read_json(root / "historical_replicates.json")
-    lines = ["# 同卡 seed42 reproducibility audit", "", "旧/新历史结果保留为独立 replicate，不覆盖、不自动剔除。", "",
-             "|Variant|Replicate|H1 MSE|H2 MSE|H3 MSE|Checkpoint step|", "|---|---|---|---|---|---|"]
-    for entry in historical["replicates"]:
-        metrics = read_json(Path(entry["path"]) / "metrics.json")
-        mse = [metrics["recursive"][h]["latent_mse"] for h in ("H1", "H2", "H3")]
-        lines.append(f"|{entry['variant']}|{entry['replicate_id']}|{mse[0]:.6f}|{mse[1]:.6f}|{mse[2]:.6f}|{metrics['checkpoint_optimizer_step']}|")
+    lines = ["# 同卡 seed42 reproducibility audit", "",
+             "当前报告只列出确定性复跑。已退役实验可从清理前 Git tag 恢复。", "",
+             "|Variant|Replicate|H1 MSE|H2 MSE|H3 MSE|Checkpoint step|",
+             "|---|---|---|---|---|---|"]
     for variant in "ABE":
         for replicate in ("rep01", "rep02"):
             path = root / "primary" / f"{variant}_seed42_{replicate}" / "metrics.json"
             if path.exists():
                 metrics = read_json(path)
                 mse = [metrics["recursive"][h]["latent_mse"] for h in ("H1", "H2", "H3")]
-                lines.append(f"|{variant}|deterministic_{replicate}|{mse[0]:.6f}|{mse[1]:.6f}|{mse[2]:.6f}|{metrics['checkpoint_optimizer_step']}|")
+                lines.append(f"|{variant}|{replicate}|{mse[0]:.6f}|{mse[1]:.6f}|{mse[2]:.6f}|{metrics['checkpoint_optimizer_step']}|")
     lines += ["", "## 稳定性 gates", ""]
     for variant in "ABE":
         gate = gates.get(variant)
         lines.append(f"- {variant}: " + ("pending" if gate is None else ("stable" if gate["stable"] else "UNSTABLE — " + "; ".join(gate["failures"]))))
-    classification = {"old_A_h3_mse": 0.6268193917348981, "status": "retained_unadjudicated", "excluded": False}
-    if gates.get("A", {}).get("stable"):
-        reference = read_json(root / "primary/A_seed42_rep01/metrics.json")["recursive"]["H3"]["latent_mse"]
-        classification["relative_distance_to_stable_A"] = relative_difference(classification["old_A_h3_mse"], reference)
-        classification["status"] = (
-            "candidate_anomalous_historical_replicate_requires_adjudication"
-            if classification["relative_distance_to_stable_A"] > 0.25
-            else "consistent_with_stable_repeat_range_do_not_exclude"
-        )
-        classification["reason"] = (
-            "Two new deterministic A runs are stable. The original run lacks checkpoint/predictions/environment metadata; "
-            "deterministic settings changed the execution protocol. Stability alone is not evidence sufficient to discard 0.6268."
-        )
-    elif "A" in gates:
-        classification["status"] = "instability_under_investigation_do_not_exclude"
-    write_json(root / "old_A_replicate_classification.json", classification)
-    lines += ["", "旧 A 0.6268: " + classification["status"] + "；保留原始记录，不能仅因性能差而剔除。",
-              "", "正式 seed42 采用预先指定的 rep01；rep02 用于复现性检查，不把两个 replicate 当成两个独立 seed。",
-              "E43/44 仅在 A/B/E 全部通过 gate 后启动。B43/44 暂用历史对照，最终比较注明执行协议差异。"]
+    lines += ["", "正式 seed42 使用预先指定的 rep01；rep02 不计作独立 seed。",
+              "2026-10-04 用户批准 E43/44 提前在 GPU1/2 并行启动；只有全部 gate 稳定后纳入正式比较。E42 两次复跑仍在 GPU0 连续进行，调度变更见 parallel_schedule.json。B43/44 为保留的历史对照，最终报告明确执行协议差异。",
+              "不可续训的共享内存事故失败记录已按用户要求删除、不归档；E/F 从头恢复的资源限制和调度见 recovery_shm.json。",
+              "最终 H1/H2/H3、H3/H1 和患者配对比较见 comparison/。"]
     (root / "audit_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -419,7 +358,7 @@ def pipeline(root: Path, gpu_id: int) -> None:
             if not all(gate["stable"] for gate in gates.values()):
                 write_json(root / "pipeline_status.json", {
                     "state": "needs_diagnosis", "gates": gates, "updated_at_utc": utc_now(),
-                    "E43_44": "held: at least one replicate pair is unstable", "old_A_excluded": False,
+                    "E43_44": "held: at least one replicate pair is unstable", "historical_archives_retired": True,
                 })
                 return
             for seed in (43, 44):
@@ -428,7 +367,7 @@ def pipeline(root: Path, gpu_id: int) -> None:
             pairs = [(42, root / "primary/B_seed42_rep01", root / "primary/E_seed42_rep01")]
             pairs.extend((seed, MAIN_ROOT / "primary" / f"B_seed{seed}", root / "primary" / f"E_seed{seed}_rep01") for seed in (43, 44))
             seed_matched_comparison(pairs, root / "comparison")
-            write_json(root / "pipeline_status.json", {"state": "complete", "updated_at_utc": utc_now(), "gates": gates, "old_A_excluded": False})
+            write_json(root / "pipeline_status.json", {"state": "complete", "updated_at_utc": utc_now(), "gates": gates, "historical_archives_retired": True})
         except Exception as error:
             write_json(root / "pipeline_status.json", {"state": "failed", "updated_at_utc": utc_now(), "error": str(error), "gates": gates})
             raise
@@ -442,7 +381,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "archive":
         preserve_history(args.output_root)
-        write_audit_summary(args.output_root, {})
+        status = args.output_root / "pipeline_status.json"
+        gates = read_json(status).get("gates", {}) if status.exists() else {}
+        write_audit_summary(args.output_root, gates)
     else:
         pipeline(args.output_root, args.gpu)
     return 0

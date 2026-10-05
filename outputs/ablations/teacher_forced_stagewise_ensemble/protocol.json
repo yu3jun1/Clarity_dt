@@ -1,0 +1,110 @@
+{
+  "source_sha256": "e3020753898e555653d6f564a5977fb39aaace808831c0a12da15f3c71d88589",
+  "core_source_sha256": "d2b254779da34834ab8875221d2120d17bf5472bec0f912500f3543677ce608f",
+  "extension_sha256": "01782836f3d95dd301acdff3a82aa3be2b808aaf4ba464225356f8bfbfa90bc6",
+  "extension_files_sha256": {
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/__init__.py": "265bdcc6ba75c1a6a31d46ab5833ed94989f379cb009b20774945065cb8d2d1d",
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/__main__.py": "92e270a44bc28598f747c465e1bfb7f41b6ae93648d5ca68ea896b9bd248d804",
+    "extensions/teacher_forced_ensemble/clarity_tf_ensemble/protocol.py": "e21c431d23473d7a5689a40a0332f7522e24fdd75e9690fbae34cb04359038c0",
+    "extensions/teacher_forced_ensemble/configs/F.yaml": "ed9fc0a5eb203a5ea72b7cc1aa7f5c9d124b4c5e612d058cf4efc10caacfbbe1",
+    "extensions/teacher_forced_ensemble/tests/test_protocol.py": "d05d2f0c276b562f704af2707dba7432e0c0c926af4ecac23e1b4499cb683634"
+  },
+  "created_at_utc": "2026-10-04T10:40:08.590184+00:00",
+  "experiment": "F",
+  "definition": "Teacher-forced Stage-wise Ensemble; 3 independent dynamics members, no RRT training",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "formal_replicate": "rep01",
+  "config": "/home/tanyuejun/Clarity_dt/extensions/teacher_forced_ensemble/configs/F.yaml",
+  "assignments": {
+    "42": 5,
+    "43": 6,
+    "44": 7
+  },
+  "gpu_inventory_at_schedule": [
+    {
+      "index": 5,
+      "uuid": "GPU-ec8b022d-47b6-1715-42cb-5ddd6dc54154",
+      "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "memory_used_mib": 30379,
+      "memory_total_mib": 97887,
+      "memory_free_mib": 67508,
+      "utilization_percent": 99
+    },
+    {
+      "index": 6,
+      "uuid": "GPU-c200f301-fb51-34c4-f089-f65323a632af",
+      "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "memory_used_mib": 30379,
+      "memory_total_mib": 97887,
+      "memory_free_mib": 67508,
+      "utilization_percent": 99
+    },
+    {
+      "index": 7,
+      "uuid": "GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96",
+      "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "memory_used_mib": 30379,
+      "memory_total_mib": 97887,
+      "memory_free_mib": 67508,
+      "utilization_percent": 99
+    }
+  ],
+  "shared_gpu_authorized_at_launch": false,
+  "mri_cache_dir": "/dev/shm/clarity_mri_cache",
+  "mri_cache_manifest_sha256": "f2312b99d1f1a0d536725c352b0ef3af60115f65c4c774a6857fb338da605890",
+  "core_files_unmodified": true,
+  "resource_policy": "Never signal existing GPU jobs; wait for idle cards unless shared use is explicitly approved",
+  "actual_launches": {
+    "43": {
+      "gpu": {
+        "index": 6,
+        "uuid": "GPU-c200f301-fb51-34c4-f089-f65323a632af",
+        "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "memory_used_mib": 0,
+        "memory_total_mib": 97887,
+        "memory_free_mib": 97887,
+        "utilization_percent": 0
+      },
+      "start_utc": "2026-10-04T10:53:20.343818+00:00",
+      "worker_pid": 1160423,
+      "shared_gpu_approved": false
+    },
+    "42": {
+      "gpu": {
+        "index": 5,
+        "uuid": "GPU-ec8b022d-47b6-1715-42cb-5ddd6dc54154",
+        "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "memory_used_mib": 3,
+        "memory_total_mib": 97887,
+        "memory_free_mib": 97884,
+        "utilization_percent": 0
+      },
+      "start_utc": "2026-10-04T18:01:24.616653+00:00",
+      "worker_pid": 2391331,
+      "shared_gpu_approved": false,
+      "restart_from_scratch": true,
+      "discard_incomplete_artifacts_user_requested": true
+    },
+    "44": {
+      "gpu": {
+        "index": 7,
+        "uuid": "GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96",
+        "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+        "memory_used_mib": 0,
+        "memory_total_mib": 97887,
+        "memory_free_mib": 97887,
+        "utilization_percent": 0
+      },
+      "start_utc": "2026-10-05T01:48:52.792028+00:00",
+      "worker_pid": 3466871,
+      "shared_gpu_approved": false,
+      "restart_from_scratch": true,
+      "discard_incomplete_artifacts_user_requested": true
+    }
+  },
+  "recovery_schedule": "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/recovery_shm.json"
+}

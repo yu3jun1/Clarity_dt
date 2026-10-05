@@ -1,0 +1,41 @@
+{
+  "created_at_utc": "2026-10-04T10:40:08.880597+00:00",
+  "runs": [
+    {
+      "variant": "D",
+      "seed": 42,
+      "source": "/home/tanyuejun/Clarity_dt/outputs/pure_rrt_v3_step2400/primary/D_seed42",
+      "snapshot": "/home/tanyuejun/Clarity_dt/outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed42",
+      "sha256": {
+        "config.yaml": "38b4ea75550ae1f3eda8c69cc33c381a035c09fbf735bb549e5ce19d55aa6b6d",
+        "metrics.json": "5742b848b83935bf7aa1b71aceeacb5406ab986dc751d6b83737723706710ac9",
+        "recursive_predictions.csv": "2552fcc4fbd2843026e909fc608569ba543715fea2f736c5a6249092b2a02d27"
+      },
+      "limitation": "Historical execution protocol; not a deterministic matched rerun"
+    },
+    {
+      "variant": "D",
+      "seed": 43,
+      "source": "/home/tanyuejun/Clarity_dt/outputs/pure_rrt_v3_step2400/primary/D_seed43",
+      "snapshot": "/home/tanyuejun/Clarity_dt/outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed43",
+      "sha256": {
+        "config.yaml": "4ca335f35e996e91cc6d3719ff2e36694b1599e02d2c9063a5229b82a700ac8f",
+        "metrics.json": "0b98c9150f9278682dc1b3639cceebdae0af5a87f908a7565d7409175ed9f5d7",
+        "recursive_predictions.csv": "607a86d81964e5d66a11e887c03efb4405b498e26e3174a665bb52533d241e47"
+      },
+      "limitation": "Historical execution protocol; not a deterministic matched rerun"
+    },
+    {
+      "variant": "D",
+      "seed": 44,
+      "source": "/home/tanyuejun/Clarity_dt/outputs/pure_rrt_v3_step2400/primary/D_seed44",
+      "snapshot": "/home/tanyuejun/Clarity_dt/outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed44",
+      "sha256": {
+        "config.yaml": "eb63bf0bb8e86a948a17742b70313fc7935c5153e2beccbeca0dee26f44901dd",
+        "metrics.json": "1255c1889ca3e7be1b3ba77760f4504a239f57165ea92d3df2ec49fa6bd2ff11",
+        "recursive_predictions.csv": "b5736b8c31e5941d4455ae1f252d88689c6f45fcd1d5a5e43df05d40da5c9e5e"
+      },
+      "limitation": "Historical execution protocol; not a deterministic matched rerun"
+    }
+  ]
+}
