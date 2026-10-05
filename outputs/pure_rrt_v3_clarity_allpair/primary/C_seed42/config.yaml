@@ -1,0 +1,79 @@
+upstream_root: third_party/CLARITY
+upstream_commit: dadb82241a24f5ec5e4e4dc994e3116fd4a9da04
+output_root: outputs/pure_rrt_v3_clarity_allpair
+data:
+  timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
+  mri_data_dir: /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post
+  mri_cache_dir: /dev/shm/clarity_mri_cache
+  split_file: data/splits.json
+model:
+  brainiac_ckpt: /home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt
+  brainiac_tokens: 8
+  brainiac_lora_r: 8
+  latent_dim: 768
+  num_modalities: 32
+  text_encoder_name: /data/tanyuejun/model/medgemma-4b-it
+  freeze_text_encoder: false
+  dropout: 0.3
+variants:
+  A:
+    training_scheme: clarity_all_pair
+    ensemble_size: 1
+  B:
+    training_scheme: pure_recursive
+    ensemble_size: 1
+  C:
+    training_scheme: clarity_all_pair
+    ensemble_size: 3
+  D:
+    training_scheme: pure_recursive
+    ensemble_size: 3
+training:
+  epochs: 100
+  warmup_epochs: 10
+  batch_size: 16
+  evaluation_batch_size: 16
+  num_workers: 2
+  seeds:
+  - 42
+  - 43
+  - 44
+  lr: 0.0002
+  text_lr: 0.0001
+  text_proj_lr: 0.0005
+  vision_lr: 5.0e-05
+  survival_weight_decay: 0.01
+  grad_clip_norm: 2.0
+  lambda_l1: 0.5
+  lambda_cox: 1.0
+  lambda_bce: 1.0
+  cf_weight: 1.0
+  cf_cos_margin: 0.9
+active_variant: C
+active_seed: 42
+active_training_scheme: clarity_all_pair
+primary_checkpoint: best_val_loss.pt
+secondary_checkpoint: best_val_cindex.pt
+primary_survival_window_rule: earliest_eligible_four_stage_window_per_patient
+cohort_counts:
+  train:
+    trajectory_count: 74
+    unique_patient_count: 38
+    primary_survival_window_count: 38
+  validation:
+    trajectory_count: 11
+    unique_patient_count: 5
+    primary_survival_window_count: 5
+  test:
+    trajectory_count: 16
+    unique_patient_count: 8
+    primary_survival_window_count: 8
+all_pair_counts:
+  train:
+    pair_count: 382
+    unique_patient_count: 38
+    primary_survival_pair_count: 38
+  validation:
+    pair_count: 56
+    unique_patient_count: 5
+    primary_survival_pair_count: 5

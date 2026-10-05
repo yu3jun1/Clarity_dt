@@ -1,0 +1,74 @@
+upstream_root: third_party/CLARITY
+output_root: outputs/stagewise_recursive
+data:
+  timeline_json: /data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json
+  mri_data_dir: /data/tanyuejun/CLARITY/dataset/MU-Glioma-Post
+  mri_cache_dir: /dev/shm/clarity_mri_cache
+  split_file: data/splits.json
+model:
+  brainiac_ckpt: /home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt
+  brainiac_tokens: 8
+  brainiac_lora_r: 8
+  latent_dim: 768
+  num_modalities: 32
+  text_encoder_name: /data/tanyuejun/model/medgemma-4b-it
+  freeze_text_encoder: false
+  dropout: 0.3
+variants:
+  A:
+    stagewise: false
+    ensemble_size: 1
+    rrt_weight: 0.0
+  B:
+    stagewise: true
+    ensemble_size: 1
+    rrt_weight: 0.1
+  C:
+    stagewise: false
+    ensemble_size: 3
+    rrt_weight: 0.0
+  D:
+    stagewise: true
+    ensemble_size: 3
+    rrt_weight: 0.1
+training:
+  epochs: 100
+  warmup_epochs: 10
+  batch_size: 4
+  evaluation_batch_size: 4
+  num_workers: 2
+  seeds:
+  - 42
+  - 43
+  - 44
+  lr: 0.0002
+  text_lr: 0.0001
+  text_proj_lr: 0.0005
+  vision_lr: 5.0e-05
+  survival_weight_decay: 0.01
+  grad_clip_norm: 2.0
+  lambda_l1: 0.5
+  lambda_cox: 1.0
+  lambda_bce: 1.0
+ablation:
+  variants:
+  - B
+  - D
+  rrt_weights:
+  - 0.0
+  - 0.01
+  - 0.05
+  - 0.1
+evaluation:
+  selective_coverages:
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1.0
+active_variant: C
+active_seed: 42
+active_rrt_weight: 0.0
+trajectory_counts:
+  train: 74
+  validation: 11
+  test: 16

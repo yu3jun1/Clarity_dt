@@ -169,6 +169,14 @@ def preserve_history(root: Path) -> dict[str, Any]:
     return {"replicates": [], "historical_archives_retired": True}
 
 
+def history_retention_status(root: Path) -> dict[str, bool]:
+    """Report retained archives without recreating any deleted experiment."""
+    return {
+        "historical_archives_retired": not bool(preserve_history(root).get("replicates")),
+        "historical_auto_reconstruction_disabled": True,
+    }
+
+
 def seed_matched_comparison(pairs: Sequence[tuple[int, Path, Path]], destination: Path) -> dict[str, Any]:
     patient_rows = []
     summaries = []
@@ -263,7 +271,7 @@ def seed_matched_comparison(pairs: Sequence[tuple[int, Path, Path]], destination
 
 def write_audit_summary(root: Path, gates: Mapping[str, Any]) -> None:
     lines = ["# 同卡 seed42 reproducibility audit", "",
-             "当前报告只列出确定性复跑。已退役实验可从清理前 Git tag 恢复。", "",
+             "当前报告只列出确定性复跑；历史记录与精确删除范围见实验记录索引，不与当前协议混合统计。", "",
              "|Variant|Replicate|H1 MSE|H2 MSE|H3 MSE|Checkpoint step|",
              "|---|---|---|---|---|---|"]
     for variant in "ABE":
@@ -358,7 +366,7 @@ def pipeline(root: Path, gpu_id: int) -> None:
             if not all(gate["stable"] for gate in gates.values()):
                 write_json(root / "pipeline_status.json", {
                     "state": "needs_diagnosis", "gates": gates, "updated_at_utc": utc_now(),
-                    "E43_44": "held: at least one replicate pair is unstable", "historical_archives_retired": True,
+                    "E43_44": "held: at least one replicate pair is unstable", **history_retention_status(root),
                 })
                 return
             for seed in (43, 44):
@@ -367,7 +375,7 @@ def pipeline(root: Path, gpu_id: int) -> None:
             pairs = [(42, root / "primary/B_seed42_rep01", root / "primary/E_seed42_rep01")]
             pairs.extend((seed, MAIN_ROOT / "primary" / f"B_seed{seed}", root / "primary" / f"E_seed{seed}_rep01") for seed in (43, 44))
             seed_matched_comparison(pairs, root / "comparison")
-            write_json(root / "pipeline_status.json", {"state": "complete", "updated_at_utc": utc_now(), "gates": gates, "historical_archives_retired": True})
+            write_json(root / "pipeline_status.json", {"state": "complete", "updated_at_utc": utc_now(), "gates": gates, **history_retention_status(root)})
         except Exception as error:
             write_json(root / "pipeline_status.json", {"state": "failed", "updated_at_utc": utc_now(), "error": str(error), "gates": gates})
             raise

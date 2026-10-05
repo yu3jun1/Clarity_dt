@@ -1,0 +1,5 @@
+variant,checkpoint_epoch,checkpoint_file,c_index,concordant_pairs,comparable_pairs,brier365,primary_8_latent_mse_mean,all_16_trajectory_latent_mse_mean
+A,35,best_val_loss.pt,0.466666666667,7,15,0.425154771842,0.236660031602,0.209067041054
+B,36,best_val_loss.pt,0.266666666667,4,15,0.25754410636,0.150285275653,0.155265863519
+C,35,best_val_loss.pt,0.4,6,15,0.441861919168,0.172258849256,0.155571007635
+D,33,best_val_loss.pt,0.333333333333,5,15,0.333820626532,0.181609520689,0.184073625132

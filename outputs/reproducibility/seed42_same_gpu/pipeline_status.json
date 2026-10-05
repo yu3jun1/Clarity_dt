@@ -324,5 +324,8 @@
   "scheduler": "shm_resource_aware_recovery_20261004",
   "recovery_schedule": "/home/tanyuejun/Clarity_dt/outputs/reproducibility/seed42_same_gpu/recovery_shm.json",
   "scheduling_amendment": "parallel_schedule.json",
-  "historical_archives_retired": true
+  "historical_archives_retired": false,
+  "historical_auto_reconstruction_disabled": true,
+  "retention_correction": "outputs/reproducibility/seed42_same_gpu/retention_correction.json",
+  "historical_round_excluded": "git:6584f6d A/B/C/D seed42 historical_rep01; other completed records retained"
 }

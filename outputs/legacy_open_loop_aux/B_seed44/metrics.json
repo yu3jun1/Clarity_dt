@@ -1,0 +1,46 @@
+{
+  "variant": "B",
+  "seed": 44,
+  "checkpoint": "runs/B_seed44/best.pt",
+  "checkpoint_epoch": 70,
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
+  "resources": {
+    "training_seconds": 28465.580441687605,
+    "peak_gpu_gb": 25.548656128
+  },
+  "direct": {
+    "patients": 20,
+    "samples": 107,
+    "events": 87,
+    "c_index": 0.6226829268292683,
+    "brier365": 0.4147412122125597,
+    "brier_na_reason": null
+  },
+  "recursive": {
+    "H1": {
+      "patients": 20,
+      "samples": 20,
+      "events": 14,
+      "c_index": 0.6097560975609756,
+      "brier365": 0.4786497818366701,
+      "brier_na_reason": null
+    },
+    "H2": {
+      "patients": 14,
+      "samples": 14,
+      "events": 10,
+      "c_index": 0.5283018867924528,
+      "brier365": 0.41227579823258237,
+      "brier_na_reason": null
+    },
+    "H3": {
+      "patients": 8,
+      "samples": 8,
+      "events": 6,
+      "c_index": 0.5333333333333333,
+      "brier365": 0.4565243885160814,
+      "brier_na_reason": null
+    }
+  }
+}

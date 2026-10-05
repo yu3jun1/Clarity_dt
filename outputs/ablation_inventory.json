@@ -1,0 +1,966 @@
+{
+  "generated_at_utc": "2026-10-05T11:43:23.021196+00:00",
+  "retention_correction": "outputs/reproducibility/seed42_same_gpu/retention_correction.json",
+  "main_factorial_history_root": "outputs/pure_rrt_v3_step2400/primary",
+  "main_factorial_history_groups": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "main_factorial_history_seeds": [
+    42,
+    43,
+    44
+  ],
+  "run_directory_count": 56,
+  "directory_counts_by_variant": {
+    "A": 12,
+    "B": 12,
+    "C": 10,
+    "D": 13,
+    "E": 6,
+    "F": 3
+  },
+  "limitations": [
+    "Directory counts include duplicate historical snapshots; they are not independent replicate or seed counts.",
+    "ABCD step2400 historical runs and current deterministic A/B/E/F do not share a fully matched numerical execution protocol; do not pool them as one matched experiment.",
+    "Current A/B/E rep02 checks reproducibility and is not an extra random seed.",
+    "The removed first-round records stay outside outputs; Git history and the original recovery backup are not rewritten.",
+    "Earlier experiment families have distinct group definitions and training protocols; retain for provenance, not automatic pooled comparison."
+  ],
+  "identical_metrics_copy_sets": [
+    [
+      "outputs/ablations/teacher_forced_stagewise/primary/E_seed42",
+      "outputs/reproducibility/seed42_same_gpu/historical/E_seed42_historical_rep01"
+    ],
+    [
+      "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed42",
+      "outputs/pure_rrt_v3_step2400/primary/D_seed42",
+      "outputs/reproducibility/seed42_same_gpu/historical/D_seed42_historical_rep02"
+    ],
+    [
+      "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed43",
+      "outputs/pure_rrt_v3_step2400/primary/D_seed43"
+    ],
+    [
+      "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed44",
+      "outputs/pure_rrt_v3_step2400/primary/D_seed44"
+    ],
+    [
+      "outputs/pure_rrt_v3_step2400/primary/A_seed42",
+      "outputs/reproducibility/seed42_same_gpu/historical/A_seed42_historical_rep02"
+    ],
+    [
+      "outputs/pure_rrt_v3_step2400/primary/B_seed42",
+      "outputs/reproducibility/seed42_same_gpu/historical/B_seed42_historical_rep02"
+    ],
+    [
+      "outputs/pure_rrt_v3_step2400/primary/C_seed42",
+      "outputs/reproducibility/seed42_same_gpu/historical/C_seed42_historical_rep02"
+    ]
+  ],
+  "runs": [
+    {
+      "variant": "E",
+      "seed": 42,
+      "run_path": "outputs/ablations/teacher_forced_stagewise/primary/E_seed42",
+      "metrics_sha256": "57e44ec42bac1c7243bccdd9aebdfb7bc77be3fc7b90b282631e718063d640a7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1536353211849928,
+        "H2": 0.15209892438724637,
+        "H3": 0.16418261919170618
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed42",
+      "metrics_sha256": "5742b848b83935bf7aa1b71aceeacb5406ab986dc751d6b83737723706710ac9",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.17369636101648211,
+        "H2": 0.16015170980244875,
+        "H3": 0.15265309531241655
+      },
+      "checkpoint_files_present": [],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 43,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed43",
+      "metrics_sha256": "0b98c9150f9278682dc1b3639cceebdae0af5a87f908a7565d7409175ed9f5d7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1782003864645958,
+        "H2": 0.1706750956363976,
+        "H3": 0.16851327288895845
+      },
+      "checkpoint_files_present": [],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 44,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/D_seed44",
+      "metrics_sha256": "1255c1889ca3e7be1b3ba77760f4504a239f57165ea92d3df2ec49fa6bd2ff11",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.18645477248355746,
+        "H2": 0.18511496391147375,
+        "H3": 0.1856562290340662
+      },
+      "checkpoint_files_present": [],
+      "predictions_present": true
+    },
+    {
+      "variant": "F",
+      "seed": 42,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/primary/F_seed42_rep01",
+      "metrics_sha256": "ac73cf7da5e974e328cca5b538eb2d87e0f0a01e8c93eec2aa195395961c8fc7",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.15968627110123634,
+        "H2": 0.1444802046753466,
+        "H3": 0.1488208775408566
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "F",
+      "seed": 43,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/primary/F_seed43_rep01",
+      "metrics_sha256": "be2f38ff58c0b7242f346b2a4f4b3b5c268d405fa17005544bc5a8814895f47c",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.14234933909028769,
+        "H2": 0.12896217638626695,
+        "H3": 0.14562685368582606
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "F",
+      "seed": 44,
+      "run_path": "outputs/ablations/teacher_forced_stagewise_ensemble/primary/F_seed44_rep01",
+      "metrics_sha256": "e82b2a72a50678e3a7e62a41d76c0dacffd7e72ccfe8faaa72012ed562643776",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.15937379281967878,
+        "H2": 0.14600327052176,
+        "H3": 0.15161771140992641
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/legacy_open_loop_aux/A_seed42",
+      "metrics_sha256": "e49fb0c7e41d40c5be0e13f53f24ccb8b560054a37d9ffcb82138a66eb1480c4",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 43,
+      "run_path": "outputs/legacy_open_loop_aux/A_seed43",
+      "metrics_sha256": "280566a9b9b5617f51260c47dfcb76cefeca4e95621b300b36c15f2da3ef9563",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 44,
+      "run_path": "outputs/legacy_open_loop_aux/A_seed44",
+      "metrics_sha256": "80cefac012d19fe833fbed6cddadadbace779eaa8bb64e44dd35505b1d4d12e2",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/legacy_open_loop_aux/B_seed42",
+      "metrics_sha256": "947bb52781f7ee58e49fa5ffc5cd7c4e04f4950d04ba3101a6c62942dbda5826",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 43,
+      "run_path": "outputs/legacy_open_loop_aux/B_seed43",
+      "metrics_sha256": "7fe028b5f4b652e4491274905c2cd622304790749e102d6a9ffc05c232081ef5",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 44,
+      "run_path": "outputs/legacy_open_loop_aux/B_seed44",
+      "metrics_sha256": "6b7b986fdf74fd7539eff0a218546f8ea8595bb6b49523f5c5b9a4524a93f6af",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/legacy_open_loop_aux/C_seed42",
+      "metrics_sha256": "01193cab80ffdd07b43b69ab1bb1f8c2c0e6c8136f31f88a0f846e48d72e4e38",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 43,
+      "run_path": "outputs/legacy_open_loop_aux/C_seed43",
+      "metrics_sha256": "ef5a3b8a83e64208010a7d7a8b6a92a8c47f0d6e0a82ce5bbdf7bd4ea4873ca3",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 44,
+      "run_path": "outputs/legacy_open_loop_aux/C_seed44",
+      "metrics_sha256": "024ff695a351c77fe933e05c34b8a01268a143de86084b6da07ddd0818a80e15",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/legacy_open_loop_aux/D_seed42",
+      "metrics_sha256": "eebd1d6eed28bfeb49d55ad626b67337fa5a5f6a4057b8456d4eef8cc8c71b2d",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 43,
+      "run_path": "outputs/legacy_open_loop_aux/D_seed43",
+      "metrics_sha256": "218665a55c9995b11d02b67252375740bafa9961c0b2e6c414059f6ebcd028f6",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 44,
+      "run_path": "outputs/legacy_open_loop_aux/D_seed44",
+      "metrics_sha256": "83127aeb05ba16325023700cc8a2587e30984af93fac2e9880bf90e46d7c59aa",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {},
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3/primary/A_seed42",
+      "metrics_sha256": "80a71f362133c912a34fa8c1f7738f985a459d8622fdb77087ea1d64301234a5",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.15617104480043054,
+        "H2": 0.17006500717252493,
+        "H3": 0.20906704105436802
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3/primary/B_seed42",
+      "metrics_sha256": "e73b43169457fa6a7570e7857839fb792ff84127d6da30148771ebea2466f000",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1846465440467,
+        "H2": 0.16673598857596517,
+        "H3": 0.15526586351916194
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3/primary/C_seed42",
+      "metrics_sha256": "28478ec8009cc3d6a837ee51dd865df022ee2c807e401569521523903f2659c0",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1461010123603046,
+        "H2": 0.14474733360111713,
+        "H3": 0.1555710076354444
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3/primary/D_seed42",
+      "metrics_sha256": "3ccb05cb6e7f80a5cc8e8f72a2e63801eb09b1d98126ad171e505f1f4add14e6",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.19857629016041756,
+        "H2": 0.18955442029982805,
+        "H3": 0.18407362513244152
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_clarity_allpair/primary/A_seed42",
+      "metrics_sha256": "ee47b5359166d9e7cb2ec6bdc365ec561440f6181941b0a11e7f12da23b7c6d5",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1659024548716843,
+        "H2": 0.16049557644873857,
+        "H3": 0.15946457022801042
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_clarity_allpair/primary/B_seed42",
+      "metrics_sha256": "1d208c996896329f736656836730b77ad6e64b11866080acdd78eecb4156c962",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.5746440812945366,
+        "H2": 0.6086125560104847,
+        "H3": 0.6138809248805046
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_clarity_allpair/primary/C_seed42",
+      "metrics_sha256": "edab1e79466a843d4ccc574429366a39f1a5bcbd92d5cdda8d2889e46559839d",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1529785729944706,
+        "H2": 0.15020837215706706,
+        "H3": 0.19680427433922887
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_clarity_allpair/primary/D_seed42",
+      "metrics_sha256": "44061be2e4c3eca42e5143ccb2573bfe4dffc006d4f00e70325f11ab7735ba59",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.5771601386368275,
+        "H2": 0.5966746732592583,
+        "H3": 0.6005494557321072
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/A_seed42",
+      "metrics_sha256": "1291bd343bab91635a9569bf51eb064b93f20429d06da1b83398b6f5cfee3264",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.16614777129143476,
+        "H2": 0.16404435131698847,
+        "H3": 0.18340921914204955
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 43,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/A_seed43",
+      "metrics_sha256": "ad647d95efd817fe6d65da0608d80179eedee4b86d2f50fa2a88eb6e7580bbb7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1468542362563312,
+        "H2": 0.13119755126535892,
+        "H3": 0.1222924655303359
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 44,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/A_seed44",
+      "metrics_sha256": "5192effdd47bdf026e8e32b7b8adea8b0c281e968ddebc4b0a6717179e7f6705",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.16664733039215207,
+        "H2": 0.1666817655786872,
+        "H3": 0.1721096932888031
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/B_seed42",
+      "metrics_sha256": "ed8b814baf8dc9ea5221ab25e859c107ce6e385710380e1d747c8348d18ffc59",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1787382261827588,
+        "H2": 0.16340182721614838,
+        "H3": 0.15566894924268126
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 43,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/B_seed43",
+      "metrics_sha256": "9ebe95cb4222e2196b575291b8dd43b455591aaffc11c1a07f25272658e8d148",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1733919344842434,
+        "H2": 0.16145643219351768,
+        "H3": 0.15704359021037817
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 44,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/B_seed44",
+      "metrics_sha256": "872e3865b3f8eaa5574f9cdb1a12869f151366a4baee783a51089fb82881f8fa",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.17562389001250267,
+        "H2": 0.16885507106781006,
+        "H3": 0.15723997680470347
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/C_seed42",
+      "metrics_sha256": "0f98660970229e736d7ac5b1d0775ad55d7bd77ae00c8c16f1f327d3e8fb30c4",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.14999323664233088,
+        "H2": 0.135825804900378,
+        "H3": 0.13275389280170202
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 43,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/C_seed43",
+      "metrics_sha256": "50a0854b886a29b5b852b7e1793cbf82b2a36278769d0b141122642f73477136",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.144210169557482,
+        "H2": 0.1374125420115888,
+        "H3": 0.15247776778414845
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 44,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/C_seed44",
+      "metrics_sha256": "e73ef88b4615b9a6cbe79392344e31ac9282f8ef400e4e20e3d89643882823c1",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.15119806956499815,
+        "H2": 0.14988792780786753,
+        "H3": 0.16957357386127114
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/D_seed42",
+      "metrics_sha256": "5742b848b83935bf7aa1b71aceeacb5406ab986dc751d6b83737723706710ac9",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.17369636101648211,
+        "H2": 0.16015170980244875,
+        "H3": 0.15265309531241655
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 43,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/D_seed43",
+      "metrics_sha256": "0b98c9150f9278682dc1b3639cceebdae0af5a87f908a7565d7409175ed9f5d7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1782003864645958,
+        "H2": 0.1706750956363976,
+        "H3": 0.16851327288895845
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 44,
+      "run_path": "outputs/pure_rrt_v3_step2400/primary/D_seed44",
+      "metrics_sha256": "1255c1889ca3e7be1b3ba77760f4504a239f57165ea92d3df2ec49fa6bd2ff11",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.18645477248355746,
+        "H2": 0.18511496391147375,
+        "H3": 0.1856562290340662
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/historical/A_seed42_historical_rep02",
+      "metrics_sha256": "1291bd343bab91635a9569bf51eb064b93f20429d06da1b83398b6f5cfee3264",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.16614777129143476,
+        "H2": 0.16404435131698847,
+        "H3": 0.18340921914204955
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/historical/B_seed42_historical_rep02",
+      "metrics_sha256": "ed8b814baf8dc9ea5221ab25e859c107ce6e385710380e1d747c8348d18ffc59",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1787382261827588,
+        "H2": 0.16340182721614838,
+        "H3": 0.15566894924268126
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/historical/C_seed42_historical_rep02",
+      "metrics_sha256": "0f98660970229e736d7ac5b1d0775ad55d7bd77ae00c8c16f1f327d3e8fb30c4",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.14999323664233088,
+        "H2": 0.135825804900378,
+        "H3": 0.13275389280170202
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/historical/D_seed42_historical_rep02",
+      "metrics_sha256": "5742b848b83935bf7aa1b71aceeacb5406ab986dc751d6b83737723706710ac9",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.17369636101648211,
+        "H2": 0.16015170980244875,
+        "H3": 0.15265309531241655
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "E",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/historical/E_seed42_historical_rep01",
+      "metrics_sha256": "57e44ec42bac1c7243bccdd9aebdfb7bc77be3fc7b90b282631e718063d640a7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1536353211849928,
+        "H2": 0.15209892438724637,
+        "H3": 0.16418261919170618
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/A_seed42_rep01",
+      "metrics_sha256": "403466a995a4b1a9a3d14384a08047bf5ee835ef3273c7d28ac63f1c80bc1622",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.15754814771935344,
+        "H2": 0.14491655817255378,
+        "H3": 0.14366572257131338
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/A_seed42_rep02",
+      "metrics_sha256": "f69dac8504d88a4d6faaf4b5c8869dd38a1e5fa717aaa86b666a124528b5baea",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.15754814771935344,
+        "H2": 0.14491655817255378,
+        "H3": 0.14366572257131338
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep02",
+      "replicate_role": "reproducibility_check_not_an_extra_seed"
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/B_seed42_rep01",
+      "metrics_sha256": "05160a26b9acccee6ae265805087e9c6af35e85b2b8246b1268fb2756494dd15",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.17959655169397593,
+        "H2": 0.16324605606496334,
+        "H3": 0.16789918905124068
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/B_seed42_rep02",
+      "metrics_sha256": "6983ce2d5fffe0198128464743604375f1b2546decee7c0f193bc521cfe40f28",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.17959655169397593,
+        "H2": 0.16324605606496334,
+        "H3": 0.16789918905124068
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep02",
+      "replicate_role": "reproducibility_check_not_an_extra_seed"
+    },
+    {
+      "variant": "E",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/E_seed42_rep01",
+      "metrics_sha256": "8e346d371286709abbfdc292ac77e568e91507f90de285e050c4b59b64ffb795",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.157861165702343,
+        "H2": 0.16964309243485332,
+        "H3": 0.21936075808480382
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "E",
+      "seed": 42,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/E_seed42_rep02",
+      "metrics_sha256": "9da763627828bb1ec2c8cd8fd67ef840b5b292e117c5f3e9386c84675830f97e",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.157861165702343,
+        "H2": 0.16964309243485332,
+        "H3": 0.21936075808480382
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep02",
+      "replicate_role": "reproducibility_check_not_an_extra_seed"
+    },
+    {
+      "variant": "E",
+      "seed": 43,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/E_seed43_rep01",
+      "metrics_sha256": "bf27699d052fc8dfbe419591805a5902c8c6a300bc984aa0e9fc41d2d72ab87f",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.15782334236428142,
+        "H2": 0.14428230980411172,
+        "H3": 0.15746425883844495
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "E",
+      "seed": 44,
+      "run_path": "outputs/reproducibility/seed42_same_gpu/primary/E_seed44_rep01",
+      "metrics_sha256": "ab4c1bb081e2f28602c203325049170f6f1771da5bc2e81dad90382ad58485e5",
+      "protocol_scope": "current_deterministic",
+      "recursive_latent_mse": {
+        "H1": 0.14676843956112862,
+        "H2": 0.1306771575473249,
+        "H3": 0.12681600311771035
+      },
+      "checkpoint_files_present": [
+        "best_val_cindex.pt",
+        "best_val_loss.pt"
+      ],
+      "predictions_present": true,
+      "replicate_id": "rep01",
+      "replicate_role": "preselected_primary"
+    },
+    {
+      "variant": "A",
+      "seed": 42,
+      "run_path": "outputs/stagewise_recursive/primary/A_seed42",
+      "metrics_sha256": "421ac188d8591eac268405619bd80e6962dace26e4b44325f2e516ad39d8a971",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.157668084371835,
+        "H2": 0.14192311884835362,
+        "H3": 0.1382088060490787
+      },
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "B",
+      "seed": 42,
+      "run_path": "outputs/stagewise_recursive/primary/B_seed42",
+      "metrics_sha256": "97e14969d4c760b374392d4349ac9cb80f92529903db210ce2ee4de961567cc1",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.16244677547365427,
+        "H2": 0.16936717508360744,
+        "H3": 0.2068673586472869
+      },
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "C",
+      "seed": 42,
+      "run_path": "outputs/stagewise_recursive/primary/C_seed42",
+      "metrics_sha256": "5680916507a940dd4fe4baff7bbf5c493d5bfd6bd18b1a26418616d000cb9f66",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.1572648691944778,
+        "H2": 0.1441241903230548,
+        "H3": 0.1393934483639896
+      },
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    },
+    {
+      "variant": "D",
+      "seed": 42,
+      "run_path": "outputs/stagewise_recursive/primary/D_seed42",
+      "metrics_sha256": "cca416706aa666a7275685cfbe06fbdd10d562d050fff065416792527252a1d7",
+      "protocol_scope": "historical_protocol",
+      "recursive_latent_mse": {
+        "H1": 0.15429000603035092,
+        "H2": 0.13922564731910825,
+        "H3": 0.12866724655032158
+      },
+      "checkpoint_files_present": [
+        "best.pt"
+      ],
+      "predictions_present": true
+    }
+  ]
+}

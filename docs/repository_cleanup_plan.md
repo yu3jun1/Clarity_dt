@@ -1,4 +1,24 @@
-# 仓库清理与目录整理
+# 仓库实验记录保留与目录整理
+
+## 当前保留范围（2026-10-05 更正）
+
+用户澄清：目标是保留完整 A–F 消融记录，仅删除 A seed42 的 H3 MSE 为
+`0.6268193917348981` 所在同一首轮的 A/B/C/D seed42。
+此前整族退役范围过宽，已从本地备份恢复其他记录；不是删除所有 seed42，也不是整仓回滚。
+
+精确排除对象全部来自 `git:6584f6d`，同轮启动时间为 `2026-09-30T16:03:39Z`：
+
+|组别|历史 replicate|H3 MSE|
+|---|---|---:|
+|A seed42|historical_rep01|0.6268193917348981|
+|B seed42|historical_rep01|0.14445258025079966|
+|C seed42|historical_rep01|0.1262373887002468|
+|D seed42|historical_rep01|0.14209353271871805|
+
+这四个目录保持不在 `outputs/reproducibility/seed42_same_gpu/historical/` 中，
+过滤后的 `historical_replicates.json` 不再列出它们；含该轮指标的旧 aggregate 日志和旧 A 分类文件不恢复。
+Git 历史、备份 tag 和原本地恢复备份不抹除、不重写。
+这是用户指定的记录管理范围，不是根据统计显著性作出的实验排除结论。
 
 ## 此前已完成的安全整理
 
@@ -7,14 +27,16 @@
 - `.gitignore` 添加 `outputs/**/*.log`，并只为当前 compact prediction/comparison CSV 放行；history CSV 和权重继续忽略。
 - 不改变训练源码、实验配置、缓存、运行中目录或已有结果；先行整理阶段不取消跟踪或提交；正式清理阶段取消跟踪日志并生成本地 commit，不自动推送该 commit。
 
-## 正式清理已完成
+## 清理与纠正的事件记录
 
-执行前 A/B/E stability gates、最终 seed-matched comparison 和 F 三个 seeds 均已完成。
-不可续训的失败记录已按用户要求删除、不归档；本次清理不是对其性能做统计排除。
-实际退役路径、当前结果校验和、远端 backup tag 及可恢复本地备份见
-`outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json`。
+原清理在 A/B/E stability gates、最终 seed-matched comparison 和 F 三个 seeds 完成后执行。
+原 [cleanup manifest](../outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json) 与提交 `0606430`
+保留为当时的事件记录，不能继续将其 retired_paths 当成当前应删除范围。
+当前保留策略、恢复文件数和精确排除对象见
+[retention correction](../outputs/reproducibility/seed42_same_gpu/retention_correction.json)。
+不可续训的共享内存事故失败记录仍按此前要求删除、不归档；本次没有恢复这些失败运行。
 
-## 正式清理的 gate
+## 此前清理检查的 gate（历史事件，非当前删除规则）
 
 1. A/B/E 的 seed42 双 replicate 全部完成，三个 stability gates 都为 stable。
 2. `comparison/seed_matched_summary.json`、`.md` 及 `patient_level_differences.csv` 齐全，覆盖 seeds 42/43/44。
@@ -24,7 +46,7 @@
 5. 创建 `pre-cleanup-2026-10-03` tag，push 到 origin 并验证 tag 对象及目标 commit；失败则不删除。
 6. 对未跟踪的 checkpoints、history、CSV 等保留可恢复本地备份；记录备份位置和 current-result checksums。
 
-## 退役目标（实际执行路径见 manifest）
+## 已恢复的实验与配套目录
 
 ```text
 outputs/stagewise_recursive/
@@ -36,20 +58,24 @@ configs/legacy/
 docs/legacy/
 outputs/reproducibility/seed42_same_gpu/historical/
 outputs/reproducibility/seed42_same_gpu/historical_replicates.json
-outputs/reproducibility/seed42_same_gpu/old_A_replicate_classification.json
-outputs/ablations/teacher_forced_stagewise/       # 旧 protocol E42，非当前 E reproducibility
+outputs/ablations/teacher_forced_stagewise/       # 旧 protocol E42，保留但非当前 E reproducibility
+outputs/pure_rrt_v3_step2400/primary/              # A/B/C/D，seed42/43/44 全部保留后续有效记录
 ```
 
-`historical/` 完整删除，包括同一轮旧 A/B/C/D seed42；不自动从 Git 重新创建它们。
-删除属于用户指定的目录退役，不是根据测试性能做统计排除的证据。
+`historical/` 保留后续四组 ABCD42 historical_rep02 和旧 E42 historical_rep01；
+这五个目录是对应原结果目录的完整快照副本，不能计为额外独立 replicate。
+只排除上表四个首轮；任何自动入口都不能从 Git 重新引入它们。
 
-最终 comparison 仍引用 B43/B44，因此 `outputs/pure_rrt_v3_step2400/` 实际仅保留
-`primary/B_seed43/` 和 `primary/B_seed44/` 两组必要对照，其他内容已退役。
+`outputs/pure_rrt_v3_step2400/primary/` 恢复完整 A/B/C/D × seeds 42/43/44，共十二组。
+其中 A seed42 的 H3 MSE 为 `0.18340921914204955`，不是被排除的 `0.6268193917348981`。
+其余三组后续 seed42 为 B `0.15566894924268126`、C `0.13275389280170202`、D `0.15265309531241655`。
+原 summary.json/md 汇总的是这些后续复跑，因此也恢复；最终 E vs B comparison 仍保持原路径与结果不变。
 F 的 `historical_controls/D_seed42/43/44` 是独立 compact 快照，仅做历史描述性比较，
 不能当成新的确定性 D 复跑，也不能自动替换正式比较中的 B43/B44。
 
 ## 必须保留
 
+- 完整 A–F 历史与当前执行记录，仅排除精确指定的首轮；历史协议与确定性协议不混合统计。
 - 当前 A/B/E 确定性 replicate、status、完整来源记录、stability gates 和最终 comparison。
 - F42/43/44 结果、core/extension provenance、seed summary 与历史对照快照。
 - 正常运行中的任务和完整评估结果；不可续训的失败目录按新要求删除，不算正式 replicate 结果。
@@ -58,14 +84,11 @@ F 的 `historical_controls/D_seed42/43/44` 是独立 compact 快照，仅做历�
 
 ## 完成记录与提交
 
-等待器 `/tmp/clarity_cleanup_after_pipeline_20261004.py` 已于 2026-10-05 18:56（北京时间）
-完成执行并退出，状态文件 `/tmp/clarity_cleanup_after_pipeline_20261004/status.json` 为 `complete`。
-执行前检查了全部 gates 和结果文件，并非仅凭进程消失或显卡空闲判定完成。
+原等待器 `/tmp/clarity_cleanup_after_pipeline_20261004.py` 已于 2026-10-05 18:56（北京时间）
+完成并退出；其 status.json 是先前清理的事件状态，不能重新启动并继续整族删除。
 
-旧目录已按明确目标移动到可恢复备份 `/tmp/clarity-precleanup-20261004-0c_ou6bk`，生成
-[cleanup manifest](../outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json)。
-清理前临时副本与清理后的核心/F 扩展测试均为 51 项通过；77 份 compact artifacts 的 checksums 保持不变。
-已有 output logs 已执行 `git rm --cached`，本地日志保留。
-本地清理 commit 为 `0606430`；备份 tag `pre-cleanup-2026-10-03` 已 push 并核验，清理 commit 尚未 push。
-清理 commit 的 GitHub push 不自动推断为已获批准。
-tag push 与 cleanup commit push 是不同操作，最终报告需分别说明状态。
+其他旧记录已从 `/tmp/clarity-precleanup-20261004-0c_ou6bk` 复制回原目录，
+checkpoint、history 与日志完整恢复在本地；Git 只保留 compact artifacts，输出日志仍不跟踪。
+当前 A/B/E/F 的 77 份 compact artifacts 校验和保持不变，源码只修正报告说明，不改变训练或评估算法。
+完整 [实验记录索引](../outputs/ablation_inventory.json) 列出协议范围、结果路径、指标校验和及重复快照映射。
+`pre-cleanup-2026-10-03` tag 已 push；后续更正使用新的本地提交，不 reset、不改写历史，也不自动 push。

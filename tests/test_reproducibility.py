@@ -172,6 +172,28 @@ def test_compact_audit_summary_does_not_require_or_recreate_history(tmp_path):
     assert preserve_history(tmp_path)["replicates"] == []
     write_audit_summary(tmp_path, {})
     assert (tmp_path / "audit_summary.md").is_file()
+    summary = (tmp_path / "audit_summary.md").read_text()
+    assert "历史记录与精确删除范围见实验记录索引" in summary
+    assert "已退役实验" not in summary
     assert not (tmp_path / "historical").exists()
     assert not (tmp_path / "historical_replicates.json").exists()
+    assert not (tmp_path / "old_A_replicate_classification.json").exists()
+
+
+def test_history_retention_status_uses_existing_filtered_index(tmp_path):
+    from clarity_rrt_v3.replicate_audit import history_retention_status
+
+    assert history_retention_status(tmp_path) == {
+        "historical_archives_retired": True,
+        "historical_auto_reconstruction_disabled": True,
+    }
+    index = tmp_path / "historical_replicates.json"
+    index.write_text(json.dumps({"replicates": [{"variant": "A", "replicate_id": "historical_rep02"}]}))
+    before = index.read_bytes()
+    assert history_retention_status(tmp_path) == {
+        "historical_archives_retired": False,
+        "historical_auto_reconstruction_disabled": True,
+    }
+    assert index.read_bytes() == before
+    assert not (tmp_path / "historical").exists()
     assert not (tmp_path / "old_A_replicate_classification.json").exists()

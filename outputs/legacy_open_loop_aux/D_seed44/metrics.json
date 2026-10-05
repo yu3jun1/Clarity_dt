@@ -1,0 +1,56 @@
+{
+  "variant": "D",
+  "seed": 44,
+  "checkpoint": "runs/D_seed44/best.pt",
+  "checkpoint_epoch": 18,
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "split_sha256": "6f9215facc4975a521e4d6fb31d19c9233978aaf8ba20ddce6306824b6913c4e",
+  "resources": {
+    "training_seconds": 27170.252394547686,
+    "peak_gpu_gb": 26.084155904
+  },
+  "direct": {
+    "patients": 20,
+    "samples": 107,
+    "events": 87,
+    "c_index": 0.5585365853658537,
+    "brier365": 0.3708836179330861,
+    "brier_na_reason": null
+  },
+  "recursive": {
+    "H1": {
+      "patients": 20,
+      "samples": 20,
+      "events": 14,
+      "c_index": 0.6016260162601627,
+      "brier365": 0.37245700786129776,
+      "brier_na_reason": null
+    },
+    "H2": {
+      "patients": 14,
+      "samples": 14,
+      "events": 10,
+      "c_index": 0.6415094339622641,
+      "brier365": 0.34852978913708454,
+      "brier_na_reason": null
+    },
+    "H3": {
+      "patients": 8,
+      "samples": 8,
+      "events": 6,
+      "c_index": 0.5333333333333333,
+      "brier365": 0.22550274828740052,
+      "brier_na_reason": null
+    }
+  },
+  "uncertainty_h2": {
+    "total_patients": 14,
+    "retained": 11,
+    "actual_coverage": 0.7857142857142857,
+    "retained_events": 8,
+    "low_uncertainty_brier365": 0.3941573915038903,
+    "low_uncertainty_brier_na_reason": null,
+    "random_same_size_brier365_mean": 0.32528839888087524,
+    "random_repeats_completed": 20
+  }
+}

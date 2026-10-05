@@ -1,0 +1,95 @@
+{
+  "variant": "D",
+  "seed": 42,
+  "rrt_weight": 0.1,
+  "checkpoint_epoch": 14,
+  "recursive": {
+    "H1": {
+      "samples": 16.0,
+      "latent_mse": 0.15429000603035092,
+      "cosine_similarity": 0.9191441349685192,
+      "c_index": 0.3854166666666667,
+      "brier365": 0.636141161055648
+    },
+    "H2": {
+      "samples": 16.0,
+      "latent_mse": 0.13922564731910825,
+      "cosine_similarity": 0.9274417385458946,
+      "c_index": 0.45263157894736844,
+      "brier365": 0.48371882316371273
+    },
+    "H3": {
+      "samples": 16.0,
+      "latent_mse": 0.12866724655032158,
+      "cosine_similarity": 0.933471854776144,
+      "c_index": 0.5157894736842106,
+      "brier365": 0.2780662008824934
+    }
+  },
+  "error_accumulation": -0.025622759480029345,
+  "uncertainty": {
+    "H1": {
+      "variance_error_pearson": -0.3991039980362708,
+      "selective_rollout": {
+        "0.25": {
+          "retained": 4,
+          "latent_mse": 0.27865195646882057
+        },
+        "0.5": {
+          "retained": 8,
+          "latent_mse": 0.19257979281246662
+        },
+        "0.75": {
+          "retained": 12,
+          "latent_mse": 0.15717530560990176
+        },
+        "1": {
+          "retained": 16,
+          "latent_mse": 0.15429000603035092
+        }
+      }
+    },
+    "H2": {
+      "variance_error_pearson": -0.4541894210371502,
+      "selective_rollout": {
+        "0.25": {
+          "retained": 4,
+          "latent_mse": 0.18679634667932987
+        },
+        "0.5": {
+          "retained": 8,
+          "latent_mse": 0.1826532445847988
+        },
+        "0.75": {
+          "retained": 12,
+          "latent_mse": 0.15648940205574036
+        },
+        "1": {
+          "retained": 16,
+          "latent_mse": 0.13922564731910825
+        }
+      }
+    },
+    "H3": {
+      "variance_error_pearson": -0.8386791542294573,
+      "selective_rollout": {
+        "0.25": {
+          "retained": 4,
+          "latent_mse": 0.20272176712751389
+        },
+        "0.5": {
+          "retained": 8,
+          "latent_mse": 0.15534125920385122
+        },
+        "0.75": {
+          "retained": 12,
+          "latent_mse": 0.13342327810823917
+        },
+        "1": {
+          "retained": 16,
+          "latent_mse": 0.12866724655032158
+        }
+      }
+    }
+  }
+}

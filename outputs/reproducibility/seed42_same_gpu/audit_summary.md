@@ -1,6 +1,6 @@
 # 同卡 seed42 reproducibility audit
 
-当前报告只列出确定性复跑。已退役实验可从清理前 Git tag 恢复。
+当前报告只列出确定性复跑；历史记录与精确删除范围见实验记录索引，不与当前协议混合统计。
 
 |Variant|Replicate|H1 MSE|H2 MSE|H3 MSE|Checkpoint step|
 |---|---|---|---|---|---|

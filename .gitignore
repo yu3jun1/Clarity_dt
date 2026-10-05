@@ -24,12 +24,18 @@ experiments/
 outputs/**/*.log
 # Compact predictions and paired analyses remain versionable; bulk/history CSVs stay ignored.
 !outputs/reproducibility/seed42_same_gpu/primary/**/recursive_predictions.csv
+!outputs/reproducibility/seed42_same_gpu/historical/**/recursive_predictions.csv
 !outputs/reproducibility/seed42_same_gpu/comparison/patient_level_differences.csv
+!outputs/ablations/teacher_forced_stagewise/primary/**/recursive_predictions.csv
 !outputs/ablations/teacher_forced_stagewise_ensemble/primary/**/recursive_predictions.csv
 !outputs/ablations/teacher_forced_stagewise_ensemble/historical_controls/**/recursive_predictions.csv
 !outputs/ablations/teacher_forced_stagewise_ensemble/comparison/patient_level_differences.csv
-!outputs/pure_rrt_v3_step2400/primary/B_seed43/recursive_predictions.csv
-!outputs/pure_rrt_v3_step2400/primary/B_seed44/recursive_predictions.csv
+!outputs/pure_rrt_v3_step2400/primary/**/recursive_predictions.csv
+!outputs/pure_rrt_v3/primary/**/recursive_predictions.csv
+!outputs/pure_rrt_v3_clarity_allpair/primary/**/recursive_predictions.csv
+!outputs/stagewise_recursive/**/recursive_predictions.csv
+!outputs/legacy_open_loop_aux/**/predictions.csv
+!outputs/diagnostics/pure_rrt_v3_seed42_survival/*.csv
 # Local environments and secrets
 .env
 .venv/

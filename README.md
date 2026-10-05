@@ -47,6 +47,24 @@ E 配置：[configs/ablations/teacher_forced_stagewise.yaml](configs/ablations/t
 F 配置：[extensions/teacher_forced_ensemble/configs/F.yaml](extensions/teacher_forced_ensemble/configs/F.yaml)。
 F 使用独立扩展，不修改运行中 A–E 的冻结源码；同时记录 core 和 extension 指纹。
 
+## 完整 A–F 结果与保留范围
+
+2026-10-05 按用户澄清更正清理范围：保留完整 A–F 消融记录，恢复被误移出的历史结果。
+仅排除 `git:6584f6d` 同一首轮的 A/B/C/D seed42，其 A 的 H3 MSE 为 `0.6268193917348981`。
+这不是删除所有 seed42：后续复跑的 A seed42（H3 MSE `0.18340921914204955`）、
+B/C/D seed42，以及当前 A/B/E 确定性 replicate 均保留。
+
+|记录|结果入口|协议说明|
+|---|---|---|
+|A/B/C/D，seed42/43/44|[step2400 汇总](outputs/pure_rrt_v3_step2400/summary.md)|历史主 factorial；seed42 为后续复跑，不是被排除首轮|
+|A/B，seed42 各两次；E，seed42 两次及 seed43/44|[复现性审计](outputs/reproducibility/seed42_same_gpu/audit_summary.md)|当前确定性协议；rep02 不算额外 seed|
+|F，seed42/43/44|[F seed 汇总](outputs/ablations/teacher_forced_stagewise_ensemble/F_seed_summary.json)|当前 Teacher-forced Stage-wise Ensemble|
+|E 旧协议 seed42|[旧 E42 指标](outputs/ablations/teacher_forced_stagewise/primary/E_seed42/metrics.json)|独立历史执行记录，不替换当前 E42|
+
+完整路径、指标校验和及重复快照映射见 [实验记录索引](outputs/ablation_inventory.json)。
+历史协议与当前确定性协议不可直接混合成一组 matched comparison；旧实验族的组别定义也可能不同。
+`historical/` 中的四份 ABCD42 rep02 和旧 E42 是对应原目录的结果副本，不是额外独立实验。
+
 ## 文档与目录
 
 全部说明从 [docs 文档索引](docs/README.md) 进入。原始实验提案集中在 `docs/experiments/`，
@@ -58,10 +76,13 @@ configs/                              # 主 factorial 与 E 配置
 scripts/                              # 训练及 reproducibility 入口
 extensions/teacher_forced_ensemble/    # F 的隔离实现、配置与测试
 data/splits.json                       # 固定患者划分，不存放原始 MRI
-docs/                                 # 数据集、实验方案、执行协议及清理计划
+docs/                                 # 数据集、实验方案、执行协议；legacy 为历史配套文档
 outputs/
+├── ablation_inventory.json           # 完整 A–F 记录、协议区分和重复副本映射
 ├── reproducibility/seed42_same_gpu/   # A/B/E 当前复现性审计
 │   ├── primary/                      # 正式 replicate 与独立 metadata
+│   ├── historical/                   # 后续历史复跑副本；排除首轮 ABCD42
+│   ├── retention_correction.json     # 更正后的保留/排除范围
 │   ├── recovery_shm.json             # 重跑队列、资源限制及当前协调状态
 │   ├── {A,B,E}_seed42_stability.json  # 三个稳定性检查均通过
 │   └── comparison/                   # 已生成正式配对比较
@@ -70,7 +91,11 @@ outputs/
 │   ├── historical_controls/          # D compact 快照，仅作历史描述性对照
 │   ├── F_seed_summary.json           # 已完成 F42/43/44 汇总
 │   └── campaign_status.json
-└── pure_rrt_v3_step2400/primary/B_seed{43,44}/  # 最终 comparison 仍依赖的临时对照
+├── pure_rrt_v3_step2400/primary/      # A/B/C/D，各 seed42/43/44 完整历史记录
+├── ablations/teacher_forced_stagewise/ # 旧 E42，保留并标注协议
+├── {stagewise_recursive,pure_rrt_v3,pure_rrt_v3_clarity_allpair,legacy_open_loop_aux}/
+│                                     # 早期不同执行协议，保留追溯、不自动合并
+└── diagnostics/                      # 配套历史 survival diagnostic
 ```
 
 最终 [E42/43/44 vs B42/43/44 报告](outputs/reproducibility/seed42_same_gpu/comparison/seed_matched_summary.md)
@@ -101,9 +126,9 @@ E42 rep01/rep02 优先在原 GPU0 连续运行，不与其他用户抢占忙卡�
 Git 只提交 compact artifacts：config、metadata、metrics、gates、报告、患者预测和配对 CSV。
 `outputs/**/*.log`、权重和训练 history CSV 留在本地；此前 tracked 的输出日志已取消跟踪。
 
-2026-10-05 已在 A/B/E gates、最终 comparison 和 F 完成后执行正式清理，
-本地清理提交为 `0606430`；`pre-cleanup-2026-10-03` tag 已推送并验证，清理提交尚未推送。
-退役路径、77 份保留结果的校验和及可恢复本地备份见
-[cleanup manifest](outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json)。
-最终比较仍引用的 B43/B44 保留，其他指定旧实验目录已退役。
-完整执行条件与记录见 [清理记录](docs/repository_cleanup_plan.md)。
+先前提交 `0606430` 的整族退役范围过宽，现已从本地备份恢复，未做整仓 reset 或 Git 历史重写。
+原 [cleanup manifest](outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json) 仅记录当时的清理事件，
+当前保留策略以 [retention correction](outputs/reproducibility/seed42_same_gpu/retention_correction.json) 为准。
+当前 A/B/E/F 的 77 份 compact results 校验和不变，最终比较仍使用其原先指定的 B43/B44。
+备份 tag `pre-cleanup-2026-10-03` 已推送；后续本地更正提交不自动推送。
+完整执行记录见 [目录整理记录](docs/repository_cleanup_plan.md)。

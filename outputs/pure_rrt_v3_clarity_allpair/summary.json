@@ -1,0 +1,619 @@
+{
+  "primary": {
+    "A": {
+      "H1_latent_mse": {
+        "mean": 0.1659024548716843,
+        "std": 0.0,
+        "values": [
+          0.1659024548716843
+        ]
+      },
+      "H1_cosine_similarity": {
+        "mean": 0.913693193346262,
+        "std": 0.0,
+        "values": [
+          0.913693193346262
+        ]
+      },
+      "H1_c_index": {
+        "mean": 0.35294117647058826,
+        "std": 0.0,
+        "values": [
+          0.35294117647058826
+        ]
+      },
+      "H1_brier365": {
+        "mean": 0.701038178448146,
+        "std": 0.0,
+        "values": [
+          0.701038178448146
+        ]
+      },
+      "H2_latent_mse": {
+        "mean": 0.16049557644873857,
+        "std": 0.0,
+        "values": [
+          0.16049557644873857
+        ]
+      },
+      "H2_cosine_similarity": {
+        "mean": 0.9165175892412663,
+        "std": 0.0,
+        "values": [
+          0.9165175892412663
+        ]
+      },
+      "H2_c_index": {
+        "mean": 0.26666666666666666,
+        "std": 0.0,
+        "values": [
+          0.26666666666666666
+        ]
+      },
+      "H2_brier365": {
+        "mean": 0.7706642203665848,
+        "std": 0.0,
+        "values": [
+          0.7706642203665848
+        ]
+      },
+      "H3_latent_mse": {
+        "mean": 0.15946457022801042,
+        "std": 0.0,
+        "values": [
+          0.15946457022801042
+        ]
+      },
+      "H3_cosine_similarity": {
+        "mean": 0.9172707460820675,
+        "std": 0.0,
+        "values": [
+          0.9172707460820675
+        ]
+      },
+      "H3_c_index": {
+        "mean": 0.4666666666666667,
+        "std": 0.0,
+        "values": [
+          0.4666666666666667
+        ]
+      },
+      "H3_brier365": {
+        "mean": 0.4290647953074508,
+        "std": 0.0,
+        "values": [
+          0.4290647953074508
+        ]
+      },
+      "error_accumulation": {
+        "mean": -0.006437884643673897,
+        "std": 0.0,
+        "values": [
+          -0.006437884643673897
+        ]
+      },
+      "observed_latent_variance": {
+        "mean": 0.07103324681520462,
+        "std": 0.0,
+        "values": [
+          0.07103324681520462
+        ]
+      },
+      "observed_transition_l2_mean": {
+        "mean": 41.45359802246094,
+        "std": 0.0,
+        "values": [
+          41.45359802246094
+        ]
+      },
+      "encoder_trainable_parameter_rms_delta": {
+        "mean": 0.0062506134249624146,
+        "std": 0.0,
+        "values": [
+          0.0062506134249624146
+        ]
+      }
+    },
+    "B": {
+      "H1_latent_mse": {
+        "mean": 0.5746440812945366,
+        "std": 0.0,
+        "values": [
+          0.5746440812945366
+        ]
+      },
+      "H1_cosine_similarity": {
+        "mean": 0.6536332108080387,
+        "std": 0.0,
+        "values": [
+          0.6536332108080387
+        ]
+      },
+      "H1_c_index": {
+        "mean": 0.5882352941176471,
+        "std": 0.0,
+        "values": [
+          0.5882352941176471
+        ]
+      },
+      "H1_brier365": {
+        "mean": 0.5261321099309035,
+        "std": 0.0,
+        "values": [
+          0.5261321099309035
+        ]
+      },
+      "H2_latent_mse": {
+        "mean": 0.6086125560104847,
+        "std": 0.0,
+        "values": [
+          0.6086125560104847
+        ]
+      },
+      "H2_cosine_similarity": {
+        "mean": 0.6320485323667526,
+        "std": 0.0,
+        "values": [
+          0.6320485323667526
+        ]
+      },
+      "H2_c_index": {
+        "mean": 0.4666666666666667,
+        "std": 0.0,
+        "values": [
+          0.4666666666666667
+        ]
+      },
+      "H2_brier365": {
+        "mean": 0.6916100404307884,
+        "std": 0.0,
+        "values": [
+          0.6916100404307884
+        ]
+      },
+      "H3_latent_mse": {
+        "mean": 0.6138809248805046,
+        "std": 0.0,
+        "values": [
+          0.6138809248805046
+        ]
+      },
+      "H3_cosine_similarity": {
+        "mean": 0.6286149807274342,
+        "std": 0.0,
+        "values": [
+          0.6286149807274342
+        ]
+      },
+      "H3_c_index": {
+        "mean": 0.4666666666666667,
+        "std": 0.0,
+        "values": [
+          0.4666666666666667
+        ]
+      },
+      "H3_brier365": {
+        "mean": 0.3820117951604529,
+        "std": 0.0,
+        "values": [
+          0.3820117951604529
+        ]
+      },
+      "error_accumulation": {
+        "mean": 0.03923684358596802,
+        "std": 0.0,
+        "values": [
+          0.03923684358596802
+        ]
+      },
+      "observed_latent_variance": {
+        "mean": 0.06016882136464119,
+        "std": 0.0,
+        "values": [
+          0.06016882136464119
+        ]
+      },
+      "observed_transition_l2_mean": {
+        "mean": 36.658756256103516,
+        "std": 0.0,
+        "values": [
+          36.658756256103516
+        ]
+      },
+      "encoder_trainable_parameter_rms_delta": {
+        "mean": 0.003203001937304722,
+        "std": 0.0,
+        "values": [
+          0.003203001937304722
+        ]
+      }
+    },
+    "C": {
+      "H1_latent_mse": {
+        "mean": 0.1529785729944706,
+        "std": 0.0,
+        "values": [
+          0.1529785729944706
+        ]
+      },
+      "H1_cosine_similarity": {
+        "mean": 0.9203209355473518,
+        "std": 0.0,
+        "values": [
+          0.9203209355473518
+        ]
+      },
+      "H1_c_index": {
+        "mean": 0.5294117647058824,
+        "std": 0.0,
+        "values": [
+          0.5294117647058824
+        ]
+      },
+      "H1_brier365": {
+        "mean": 0.3502293253577961,
+        "std": 0.0,
+        "values": [
+          0.3502293253577961
+        ]
+      },
+      "H2_latent_mse": {
+        "mean": 0.15020837215706706,
+        "std": 0.0,
+        "values": [
+          0.15020837215706706
+        ]
+      },
+      "H2_cosine_similarity": {
+        "mean": 0.9217555113136768,
+        "std": 0.0,
+        "values": [
+          0.9217555113136768
+        ]
+      },
+      "H2_c_index": {
+        "mean": 0.3333333333333333,
+        "std": 0.0,
+        "values": [
+          0.3333333333333333
+        ]
+      },
+      "H2_brier365": {
+        "mean": 0.5248653079870925,
+        "std": 0.0,
+        "values": [
+          0.5248653079870925
+        ]
+      },
+      "H3_latent_mse": {
+        "mean": 0.19680427433922887,
+        "std": 0.0,
+        "values": [
+          0.19680427433922887
+        ]
+      },
+      "H3_cosine_similarity": {
+        "mean": 0.8972268886864185,
+        "std": 0.0,
+        "values": [
+          0.8972268886864185
+        ]
+      },
+      "H3_c_index": {
+        "mean": 0.4,
+        "std": 0.0,
+        "values": [
+          0.4
+        ]
+      },
+      "H3_brier365": {
+        "mean": 0.48485678913593677,
+        "std": 0.0,
+        "values": [
+          0.48485678913593677
+        ]
+      },
+      "error_accumulation": {
+        "mean": 0.04382570134475827,
+        "std": 0.0,
+        "values": [
+          0.04382570134475827
+        ]
+      },
+      "observed_latent_variance": {
+        "mean": 0.06574638932943344,
+        "std": 0.0,
+        "values": [
+          0.06574638932943344
+        ]
+      },
+      "observed_transition_l2_mean": {
+        "mean": 39.2521858215332,
+        "std": 0.0,
+        "values": [
+          39.2521858215332
+        ]
+      },
+      "encoder_trainable_parameter_rms_delta": {
+        "mean": 0.006343454204304287,
+        "std": 0.0,
+        "values": [
+          0.006343454204304287
+        ]
+      },
+      "H1_latent_disagreement_mean": {
+        "mean": 0.0080882306501735,
+        "std": 0.0,
+        "values": [
+          0.0080882306501735
+        ]
+      },
+      "H1_latent_disagreement_error_pearson": {
+        "mean": -0.29941451764024385,
+        "std": 0.0,
+        "values": [
+          -0.29941451764024385
+        ]
+      },
+      "H1_survival_probability_disagreement_mean": {
+        "mean": 0.03475608164444566,
+        "std": 0.0,
+        "values": [
+          0.03475608164444566
+        ]
+      },
+      "H2_latent_disagreement_mean": {
+        "mean": 0.010673723532818258,
+        "std": 0.0,
+        "values": [
+          0.010673723532818258
+        ]
+      },
+      "H2_latent_disagreement_error_pearson": {
+        "mean": 0.2885467733093006,
+        "std": 0.0,
+        "values": [
+          0.2885467733093006
+        ]
+      },
+      "H2_survival_probability_disagreement_mean": {
+        "mean": 0.051962510915473104,
+        "std": 0.0,
+        "values": [
+          0.051962510915473104
+        ]
+      },
+      "H3_latent_disagreement_mean": {
+        "mean": 0.028814630932174623,
+        "std": 0.0,
+        "values": [
+          0.028814630932174623
+        ]
+      },
+      "H3_latent_disagreement_error_pearson": {
+        "mean": 0.8244771600952562,
+        "std": 0.0,
+        "values": [
+          0.8244771600952562
+        ]
+      },
+      "H3_survival_probability_disagreement_mean": {
+        "mean": 0.09967479202896357,
+        "std": 0.0,
+        "values": [
+          0.09967479202896357
+        ]
+      }
+    },
+    "D": {
+      "H1_latent_mse": {
+        "mean": 0.5771601386368275,
+        "std": 0.0,
+        "values": [
+          0.5771601386368275
+        ]
+      },
+      "H1_cosine_similarity": {
+        "mean": 0.6479004137217999,
+        "std": 0.0,
+        "values": [
+          0.6479004137217999
+        ]
+      },
+      "H1_c_index": {
+        "mean": 0.5294117647058824,
+        "std": 0.0,
+        "values": [
+          0.5294117647058824
+        ]
+      },
+      "H1_brier365": {
+        "mean": 0.5448741006163192,
+        "std": 0.0,
+        "values": [
+          0.5448741006163192
+        ]
+      },
+      "H2_latent_mse": {
+        "mean": 0.5966746732592583,
+        "std": 0.0,
+        "values": [
+          0.5966746732592583
+        ]
+      },
+      "H2_cosine_similarity": {
+        "mean": 0.6345948278903961,
+        "std": 0.0,
+        "values": [
+          0.6345948278903961
+        ]
+      },
+      "H2_c_index": {
+        "mean": 0.4666666666666667,
+        "std": 0.0,
+        "values": [
+          0.4666666666666667
+        ]
+      },
+      "H2_brier365": {
+        "mean": 0.9001859499265155,
+        "std": 0.0,
+        "values": [
+          0.9001859499265155
+        ]
+      },
+      "H3_latent_mse": {
+        "mean": 0.6005494557321072,
+        "std": 0.0,
+        "values": [
+          0.6005494557321072
+        ]
+      },
+      "H3_cosine_similarity": {
+        "mean": 0.6318917647004128,
+        "std": 0.0,
+        "values": [
+          0.6318917647004128
+        ]
+      },
+      "H3_c_index": {
+        "mean": 0.4,
+        "std": 0.0,
+        "values": [
+          0.4
+        ]
+      },
+      "H3_brier365": {
+        "mean": 0.41327881023695956,
+        "std": 0.0,
+        "values": [
+          0.41327881023695956
+        ]
+      },
+      "error_accumulation": {
+        "mean": 0.023389317095279694,
+        "std": 0.0,
+        "values": [
+          0.023389317095279694
+        ]
+      },
+      "observed_latent_variance": {
+        "mean": 0.05922164022922516,
+        "std": 0.0,
+        "values": [
+          0.05922164022922516
+        ]
+      },
+      "observed_transition_l2_mean": {
+        "mean": 36.29622268676758,
+        "std": 0.0,
+        "values": [
+          36.29622268676758
+        ]
+      },
+      "encoder_trainable_parameter_rms_delta": {
+        "mean": 0.003083321068009499,
+        "std": 0.0,
+        "values": [
+          0.003083321068009499
+        ]
+      },
+      "H1_latent_disagreement_mean": {
+        "mean": 0.016318148467689753,
+        "std": 0.0,
+        "values": [
+          0.016318148467689753
+        ]
+      },
+      "H1_latent_disagreement_error_pearson": {
+        "mean": 0.015357010783412728,
+        "std": 0.0,
+        "values": [
+          0.015357010783412728
+        ]
+      },
+      "H1_survival_probability_disagreement_mean": {
+        "mean": 0.005147507752553793,
+        "std": 0.0,
+        "values": [
+          0.005147507752553793
+        ]
+      },
+      "H2_latent_disagreement_mean": {
+        "mean": 0.014439257443882525,
+        "std": 0.0,
+        "values": [
+          0.014439257443882525
+        ]
+      },
+      "H2_latent_disagreement_error_pearson": {
+        "mean": 0.2888727371867467,
+        "std": 0.0,
+        "values": [
+          0.2888727371867467
+        ]
+      },
+      "H2_survival_probability_disagreement_mean": {
+        "mean": 0.002542330294090789,
+        "std": 0.0,
+        "values": [
+          0.002542330294090789
+        ]
+      },
+      "H3_latent_disagreement_mean": {
+        "mean": 0.014415570418350399,
+        "std": 0.0,
+        "values": [
+          0.014415570418350399
+        ]
+      },
+      "H3_latent_disagreement_error_pearson": {
+        "mean": 0.32246172531692546,
+        "std": 0.0,
+        "values": [
+          0.32246172531692546
+        ]
+      },
+      "H3_survival_probability_disagreement_mean": {
+        "mean": 0.0018817394629877526,
+        "std": 0.0,
+        "values": [
+          0.0018817394629877526
+        ]
+      }
+    }
+  },
+  "primary_checkpoint": "best_val_loss.pt",
+  "primary_checkpoint_selection_criterion": "validation_total_loss",
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "all_pair_counts": {
+    "train": {
+      "pair_count": 382,
+      "unique_patient_count": 38,
+      "primary_survival_pair_count": 38
+    },
+    "validation": {
+      "pair_count": 56,
+      "unique_patient_count": 5,
+      "primary_survival_pair_count": 5
+    }
+  },
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient"
+}
