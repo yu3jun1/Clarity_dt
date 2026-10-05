@@ -43,8 +43,8 @@ outputs/ablations/teacher_forced_stagewise/       # 旧 protocol E42，非当前
 `historical/` 完整删除，包括同一轮旧 A/B/C/D seed42；不自动从 Git 重新创建它们。
 删除属于用户指定的目录退役，不是根据测试性能做统计排除的证据。
 
-`outputs/pure_rrt_v3_step2400/` 根据最终 comparison 的真实依赖决定：
-若仍引用 B43/B44，仅保留这两组必要对照，其他内容退役；没有依赖则整族退役。
+最终 comparison 仍引用 B43/B44，因此 `outputs/pure_rrt_v3_step2400/` 实际仅保留
+`primary/B_seed43/` 和 `primary/B_seed44/` 两组必要对照，其他内容已退役。
 F 的 `historical_controls/D_seed42/43/44` 是独立 compact 快照，仅做历史描述性比较，
 不能当成新的确定性 D 复跑，也不能自动替换正式比较中的 B43/B44。
 
@@ -56,16 +56,16 @@ F 的 `historical_controls/D_seed42/43/44` 是独立 compact 快照，仅做历�
 - `/dev/shm/clarity_mri_cache`、原始 MU/UCSF 数据、split 文件和 pretrained checkpoints。
 - 用户已有改动和 staging 内容；恢复 tag/备份不使用 hard reset 或历史重写。
 
-## 等待器与提交
+## 完成记录与提交
 
-当前等待器为 `/tmp/clarity_cleanup_after_pipeline_20261004.py`，
-状态在 `/tmp/clarity_cleanup_after_pipeline_20261004/status.json`。
-它必须在恢复未完成时保持旧实验族删除关闭，随后重新检查所有 gates；
-不得只因为进程消失或显卡空闲就执行清理。
+等待器 `/tmp/clarity_cleanup_after_pipeline_20261004.py` 已于 2026-10-05 18:56（北京时间）
+完成执行并退出，状态文件 `/tmp/clarity_cleanup_after_pipeline_20261004/status.json` 为 `complete`。
+执行前检查了全部 gates 和结果文件，并非仅凭进程消失或显卡空闲判定完成。
 
-真正清理使用明确验证过的目标并优先移动到本地备份，生成
-`outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json`。
-先在独立临时副本验证清理后的代码，再执行并复验；compact artifacts 的 checksums 应保持不变。
-已有 output logs 最后才执行 `git rm --cached`，本地活跃日志保留。
-按之前要求生成本地清理 commit；清理 commit 的 GitHub push 不自动推断为已获批准。
+旧目录已按明确目标移动到可恢复备份 `/tmp/clarity-precleanup-20261004-0c_ou6bk`，生成
+[cleanup manifest](../outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json)。
+清理前临时副本与清理后的核心/F 扩展测试均为 51 项通过；77 份 compact artifacts 的 checksums 保持不变。
+已有 output logs 已执行 `git rm --cached`，本地日志保留。
+本地清理 commit 为 `0606430`；备份 tag `pre-cleanup-2026-10-03` 已 push 并核验，清理 commit 尚未 push。
+清理 commit 的 GitHub push 不自动推断为已获批准。
 tag push 与 cleanup commit push 是不同操作，最终报告需分别说明状态。

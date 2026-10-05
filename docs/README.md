@@ -7,7 +7,7 @@
 |[seed42 reproducibility audit](seed42_reproducibility_audit.md)|A/B/E 同卡双 replicate、确定性、stability gate 与 seed-matched 比较|
 |[F 实验方案](teacher_forced_stagewise_ensemble_F_plan.md)|Teacher-forced Stage-wise + 3-member dynamics ensemble，不做 RRT 训练|
 |[UCSF 数据集说明](UCSF_POSTOP_GLIOMA_DATASET.md)|本地数据内容、目录、字段和使用限制；不是当前 A–F 消融的数据切换|
-|[清理与目录整理计划](repository_cleanup_plan.md)|前置条件、待删除目标、保留结果、备份及提交规则|
+|[清理与目录整理记录](repository_cleanup_plan.md)|已完成的退役目录、保留结果、备份及提交规则|
 
 ## 实验设计背景
 
@@ -19,4 +19,5 @@
 这些文档是设计说明，不是自动执行的指令，也不代表建议中的实验已经完成。
 活动代码和组别以 [仓库 README](../README.md)、配置及真实输出 metadata 为准。
 
-`docs/legacy/` 不作为当前文档入口；它与 legacy configs/outputs 的删除仍受清理前置条件约束。
+2026-10-05 已完成正式清理：`docs/legacy/`、legacy configs 和退役 outputs 已移出工作目录。
+实际清理路径与恢复备份见 [cleanup manifest](../outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json)。

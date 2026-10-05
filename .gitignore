@@ -20,7 +20,7 @@ experiments/
 *.nii
 *.nii.gz
 *.lock
-# Detailed logs remain local; already tracked logs are retired in the guarded cleanup commit.
+# Detailed logs remain local; previously tracked output logs have been untracked.
 outputs/**/*.log
 # Compact predictions and paired analyses remain versionable; bulk/history CSVs stay ignored.
 !outputs/reproducibility/seed42_same_gpu/primary/**/recursive_predictions.csv

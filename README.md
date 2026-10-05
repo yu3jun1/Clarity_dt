@@ -1,7 +1,8 @@
 # CLARITY：Stage-wise、Teacher-forcing 与 Dynamics Ensemble
 
-当前工作包括 A/B/E 的同卡 seed42 确定性复现，以及独立的 F 消融。
-正式比较必须等相关 stability gates 和完整评估产物生成；运行进度与失败状态以各输出目录的 JSON 为准，不能把中间 checkpoint 当作完成结果。
+本轮 A/B/E 的同卡 seed42 确定性复现，以及 F seed42/43/44 消融均已完成训练和评估。
+A/B/E 三个 stability gates 均通过，E vs B 的 seed-matched 比较和 F 三个 seeds 的汇总已生成。
+实验完成状态以各输出目录的 JSON 为准，不能把中间 checkpoint 当作完成结果。
 
 ## 实验定义
 
@@ -62,16 +63,19 @@ outputs/
 ├── reproducibility/seed42_same_gpu/   # A/B/E 当前复现性审计
 │   ├── primary/                      # 正式 replicate 与独立 metadata
 │   ├── recovery_shm.json             # 重跑队列、资源限制及当前协调状态
-│   ├── {A,B,E}_seed42_stability.json  # 生成后才可判断稳定性
-│   └── comparison/                   # 全部 gate 通过后才生成正式配对比较
+│   ├── {A,B,E}_seed42_stability.json  # 三个稳定性检查均通过
+│   └── comparison/                   # 已生成正式配对比较
 ├── ablations/teacher_forced_stagewise_ensemble/
 │   ├── primary/                      # F42/43/44
 │   ├── historical_controls/          # D compact 快照，仅作历史描述性对照
+│   ├── F_seed_summary.json           # 已完成 F42/43/44 汇总
 │   └── campaign_status.json
 └── pure_rrt_v3_step2400/primary/B_seed{43,44}/  # 最终 comparison 仍依赖的临时对照
 ```
 
-最终 E42/43/44 vs B42/43/44 比较 H1/H2/H3、H3/H1 及 patient-level differences。
+最终 [E42/43/44 vs B42/43/44 报告](outputs/reproducibility/seed42_same_gpu/comparison/seed_matched_summary.md)
+比较 H1/H2/H3、H3/H1 及 patient-level differences；
+[F seed 汇总](outputs/ablations/teacher_forced_stagewise_ensemble/F_seed_summary.json) 保留三个 seeds 的指标。
 seed42 正式使用预先指定的 rep01；rep02 仅检查复现性，不能计为另一个 seed。
 B43/44 与历史 D 对照存在执行协议差异，应明确标注；3 个 seeds、8 位 test 患者的分析仍属探索性。
 
@@ -95,9 +99,11 @@ E42 rep01/rep02 优先在原 GPU0 连续运行，不与其他用户抢占忙卡�
 ## 结果与清理规则
 
 Git 只提交 compact artifacts：config、metadata、metrics、gates、报告、患者预测和配对 CSV。
-`outputs/**/*.log`、权重和训练 history CSV 留在本地；已经 tracked 的日志须在最终清理提交中取消跟踪。
+`outputs/**/*.log`、权重和训练 history CSV 留在本地；此前 tracked 的输出日志已取消跟踪。
 
-退役目录清理的前置条件、精确目标和安全步骤见 [清理计划](docs/repository_cleanup_plan.md)。
-在 A/B/E gates、最终 comparison 和 F 完成之前，不删除旧结果，也不修改冻结源码。
-真正删除前须创建并推送 `pre-cleanup-2026-10-03` tag，验证远端成功，并为未跟踪文件保留可恢复本地备份。
-只有 `outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json` 存在且清理状态完成，才表示正式清理已执行。
+2026-10-05 已在 A/B/E gates、最终 comparison 和 F 完成后执行正式清理，
+本地清理提交为 `0606430`；`pre-cleanup-2026-10-03` tag 已推送并验证，清理提交尚未推送。
+退役路径、77 份保留结果的校验和及可恢复本地备份见
+[cleanup manifest](outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json)。
+最终比较仍引用的 B43/B44 保留，其他指定旧实验目录已退役。
+完整执行条件与记录见 [清理记录](docs/repository_cleanup_plan.md)。
