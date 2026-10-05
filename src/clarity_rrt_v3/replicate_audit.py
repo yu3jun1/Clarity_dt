@@ -1,27 +1,23 @@
-"""Same-device replicate gates, historical preservation, and paired comparisons."""
+"""Historical result analysis for replicate gates and paired comparisons.
+
+This module only analyzes existing artifacts; it cannot launch training.
+The original strict audit gate criteria remain unchanged for historical data.
+"""
 
 from __future__ import annotations
 
 import argparse
 import csv
-import fcntl
 import json
 import math
-import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import numpy as np
 
-from .reproducibility import source_sha256, utc_now
-
-
 DEFAULT_ROOT = Path("outputs/reproducibility/seed42_same_gpu")
-MAIN_ROOT = Path("outputs/pure_rrt_v3_step2400")
 METRIC_NAMES = ("latent_mse", "cosine_similarity", "c_index", "brier365")
-# These operational tolerances are fixed before seeing the new replicates.
+# Historical audit tolerances were fixed before seeing the original replicates.
 GATE_POLICY = {
     "aggregate_mse_and_ratio_relative_tolerance": 0.01,
     "cosine_cindex_brier_absolute_tolerance": 0.001,
@@ -270,8 +266,8 @@ def seed_matched_comparison(pairs: Sequence[tuple[int, Path, Path]], destination
 
 
 def write_audit_summary(root: Path, gates: Mapping[str, Any]) -> None:
-    lines = ["# 同卡 seed42 reproducibility audit", "",
-             "当前报告只列出确定性复跑；历史记录与精确删除范围见实验记录索引，不与当前协议混合统计。", "",
+    lines = ["# 历史同卡 seed42 reproducibility audit", "",
+             "本报告只分析已存在的严格确定性复跑记录，不启动训练；历史 gate 标准不适用于当前普通 seeded 训练。历史记录与精确删除范围见实验记录索引。", "",
              "|Variant|Replicate|H1 MSE|H2 MSE|H3 MSE|Checkpoint step|",
              "|---|---|---|---|---|---|"]
     for variant in "ABE":
@@ -292,108 +288,16 @@ def write_audit_summary(root: Path, gates: Mapping[str, Any]) -> None:
     (root / "audit_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def run_experiment(root: Path, variant: str, seed: int, replicate: str, gpu_uuid: str, frozen_source: str) -> Path:
-    directory = root / "primary" / f"{variant}_seed{seed}_{replicate}"
-    if directory.exists():
-        raise FileExistsError(f"Refusing to overwrite or silently resume {directory}")
-    if source_sha256() != frozen_source:
-        raise RuntimeError("Source/config changed during audit; stopping instead of mixing protocols")
-    directory.mkdir(parents=True)
-    config = "configs/ablations/teacher_forced_stagewise.yaml" if variant == "E" else "configs/pure_rrt_v3.yaml"
-    env = dict(os.environ, CUDA_VISIBLE_DEVICES=gpu_uuid, PYTHONHASHSEED=str(seed),
-               CUBLAS_WORKSPACE_CONFIG=":4096:8", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1",
-               TOKENIZERS_PARALLELISM="false", HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
-    arguments = ["--config", config, "--variant", variant, "--seed", str(seed), "--device", "cuda:0",
-                 "--output-root", str(root), "--replicate", replicate, "--deterministic"]
-    status = {"variant": variant, "seed": seed, "replicate_id": replicate, "gpu_uuid": gpu_uuid,
-              "state": "training", "train_start_utc": utc_now()}
-    write_json(directory / "status.json", status)
-    print(f"START {variant} seed={seed} {replicate} GPU={gpu_uuid} {utc_now()}", flush=True)
-    try:
-        with (directory / "train.log").open("w", encoding="utf-8") as log:
-            subprocess.run([sys.executable, "-m", "clarity_rrt_v3.train", *arguments], env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
-        status.update(state="evaluating", evaluate_start_utc=utc_now())
-        write_json(directory / "status.json", status)
-        with (directory / "evaluate.log").open("w", encoding="utf-8") as log:
-            subprocess.run([sys.executable, "-m", "clarity_rrt_v3.evaluate", "run", *arguments], env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
-        if source_sha256() != frozen_source:
-            raise RuntimeError("Source/config changed during run; results require re-audit")
-        status.update(state="complete", complete_utc=utc_now())
-    except Exception as error:
-        status.update(state="failed", error=str(error), failed_utc=utc_now())
-        write_json(directory / "status.json", status)
-        raise
-    write_json(directory / "status.json", status)
-    print(f"COMPLETE {variant} seed={seed} {replicate} {utc_now()}", flush=True)
-    return directory
-
-
-def pipeline(root: Path, gpu_id: int) -> None:
-    root.mkdir(parents=True, exist_ok=True)
-    with (root / "pipeline.lock").open("w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        gpu_uuid = subprocess.check_output(
-            ["nvidia-smi", "-i", str(gpu_id), "--query-gpu=uuid", "--format=csv,noheader"], text=True,
-        ).strip()
-        # An idle CUDA context can reserve a few hundred MiB without doing work.
-        # Reject materially occupied devices; never terminate another user's job.
-        usage = subprocess.check_output(
-            ["nvidia-smi", "-i", str(gpu_id), "--query-gpu=memory.used,utilization.gpu", "--format=csv,noheader,nounits"], text=True,
-        ).strip()
-        memory_used, utilization = [int(value.strip()) for value in usage.split(",")]
-        if memory_used > 1024 or utilization > 5:
-            raise RuntimeError(f"GPU {gpu_id} is busy ({usage}); choose an idle card")
-        preserve_history(root)
-        frozen_source = source_sha256()
-        write_json(root / "protocol.json", {
-            "created_at_utc": utc_now(), "gpu_id": gpu_id, "gpu_uuid": gpu_uuid,
-            "source_sha256": frozen_source, "policy": GATE_POLICY,
-            "gpu_usage_at_launch": {"memory_used_mib": memory_used, "utilization_percent": utilization},
-            "queue": [f"{variant}_seed42_{rep}" for variant in "ABE" for rep in ("rep01", "rep02")],
-            "conditional_queue": ["E_seed43_rep01", "E_seed44_rep01"],
-            "no_original_outputs_modified": True,
-        })
-        gates = {}
-        write_audit_summary(root, gates)
-        try:
-            for variant in "ABE":
-                write_json(root / "pipeline_status.json", {"state": "running", "active_variant": variant, "updated_at_utc": utc_now(), "gates": gates})
-                pair = [run_experiment(root, variant, 42, rep, gpu_uuid, frozen_source) for rep in ("rep01", "rep02")]
-                gates[variant] = assess_pair(*pair)
-                write_json(root / f"{variant}_seed42_stability.json", gates[variant])
-                write_audit_summary(root, gates)
-                print(f"GATE {variant}: {'stable' if gates[variant]['stable'] else 'UNSTABLE'}", flush=True)
-            if not all(gate["stable"] for gate in gates.values()):
-                write_json(root / "pipeline_status.json", {
-                    "state": "needs_diagnosis", "gates": gates, "updated_at_utc": utc_now(),
-                    "E43_44": "held: at least one replicate pair is unstable", **history_retention_status(root),
-                })
-                return
-            for seed in (43, 44):
-                write_json(root / "pipeline_status.json", {"state": "running", "active_variant": "E", "active_seed": seed, "updated_at_utc": utc_now(), "gates": gates})
-                run_experiment(root, "E", seed, "rep01", gpu_uuid, frozen_source)
-            pairs = [(42, root / "primary/B_seed42_rep01", root / "primary/E_seed42_rep01")]
-            pairs.extend((seed, MAIN_ROOT / "primary" / f"B_seed{seed}", root / "primary" / f"E_seed{seed}_rep01") for seed in (43, 44))
-            seed_matched_comparison(pairs, root / "comparison")
-            write_json(root / "pipeline_status.json", {"state": "complete", "updated_at_utc": utc_now(), "gates": gates, **history_retention_status(root)})
-        except Exception as error:
-            write_json(root / "pipeline_status.json", {"state": "failed", "updated_at_utc": utc_now(), "error": str(error), "gates": gates})
-            raise
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("archive", "pipeline"))
+    parser.add_argument("command", choices=("report", "archive"),
+                        help="Analyze existing historical artifacts only; archive is a legacy alias for report")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_ROOT)
-    parser.add_argument("--gpu", type=int, default=0)
     args = parser.parse_args(argv)
-    if args.command == "archive":
-        preserve_history(args.output_root)
-        status = args.output_root / "pipeline_status.json"
-        gates = read_json(status).get("gates", {}) if status.exists() else {}
-        write_audit_summary(args.output_root, gates)
-    else:
-        pipeline(args.output_root, args.gpu)
+    preserve_history(args.output_root)
+    status = args.output_root / "pipeline_status.json"
+    gates = read_json(status).get("gates", {}) if status.exists() else {}
+    write_audit_summary(args.output_root, gates)
     return 0
 
 

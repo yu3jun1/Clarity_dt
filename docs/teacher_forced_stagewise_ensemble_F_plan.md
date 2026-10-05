@@ -1,5 +1,9 @@
 # F：Teacher-forced Stage-wise Ensemble
 
+当前 F 与 A–E 一样采用普通 seeded training，数值执行行为参考历史 step2400
+`9871306` 基线。严格训练模式及其 CLI/config 开关已移除，不提供另一套 opt-in 模式。
+此前完成的严格协议结果仍是历史记录；本文的当前启动方式不覆盖或改写它们。
+
 ## 1. 实验定义与消融问题
 
 F = E 的 Stage-wise + Teacher-forcing + C/D 同形式的 3-member dynamics ensemble。
@@ -58,49 +62,55 @@ F 的 data/model/training/upstream 设置逐项等于当前 E 配置；发现漂
 |其他|dropout 0.3；survival weight decay 0.01；gradient clipping 2.0；CF cosine margin 0.9|
 |主 checkpoint|warmup 后最小 validation total loss 的 `best_val_loss.pt`；相同值保留较早 checkpoint|
 |诊断 checkpoint|val C-index checkpoint 仅诊断，不据测试结果选模型|
-|确定性|strict deterministic algorithms；TF32 关闭；SDP math-only；固定 Python/NumPy/Torch/DataLoader seeds|
+|随机种子|普通 Python/NumPy/PyTorch seeding 与训练 shuffle generator；不额外强制严格数值模式或 worker seeding|
 
 每个 run/evaluation metadata 记录 GPU 型号及 UUID、PyTorch/CUDA/cuDNN、
-包版本、数据/配置指纹、训练批次顺序、初始模型指纹和有效预算。
-严格确定性只控制当前实现和环境，不承诺不同硬件、库版本之间逐位一致。
+包版本、数据/配置/源码指纹、初始模型信息和有效预算。
+固定 seed 不承诺同一或不同硬件、库版本之间逐位一致；历史 gate 不是新 run 的前提。
+建议使用新进程；入口不主动清除父 shell 的已有环境变量或重置同进程先前的 backend 设置。
+旧保存配置里的 `deterministic` 键只在加载后的内存配置中忽略，不写回历史文件，
+也不会启用严格 deterministic algorithms 或强制 cuDNN/TF32/SDPA 设置。
 F 仍有三倍 dynamics 分支，耗时可以高于 E；相同 step 数并非相同 GPU 时间预算。
 
-## 4. 与运行中 E 隔离的实现
+## 4. 独立扩展与来源冻结
 
-当前 E 的复现性审计冻结了 `src/`、`configs/`、`scripts/` 和 upstream Predictor 源码。
-修改这些文件会使运行中的 E source gate 或训练/评估一致性检查失效。
-因此 F 在 `extensions/teacher_forced_ensemble/` 中注册自己的 experiment kind，
+F 在 `extensions/teacher_forced_ensemble/` 中注册自己的 experiment kind，
 只在 F 子进程内部扩展 validator/metadata hook；不修改 A–E variant map 或核心文件。
 
 F 的 `source_sha256` 是核心源码 SHA256 与扩展源码 SHA256 的组合；
 metadata 同时保存 `core_source_sha256`、`extension_sha256` 和扩展逐文件 SHA256。
-campaign 冻结指纹，训练前、训练后及评估时检查，不允许运行期间改源码。
-与现有 E 审计共用的延迟清理必须等待 F 完成后才能执行，以免破坏 source gate。
+每次 campaign 冻结启动时的 current core/extension 指纹，训练前、训练后及评估时检查，
+不允许运行期间改源码。当前源码指纹无需等于旧严格 E audit 的源码指纹，
+启动也不需要旧 audit 的 protocol 文件或 A/B/E stability gates。
+仍应在活动训练和评估结束后再修改这些运行所依赖的源码、配置及缓存。
 
 ## 5. 调度、路径及启动
 
 预设 F42→GPU5、F43→GPU6、F44→GPU7。三张卡具备资源时并行训练。
-已有 E42/E43/E44 或其他用户任务保持运行，不停止任何既有 GPU 进程。
+已有实验或其他用户任务保持运行，不停止任何既有 GPU 进程。
 默认只在对应 GPU 空闲（显存占用≤1 GiB、利用率≤5%）时启动；每 30 秒检查。
 如用户明确批准共享，才允许在剩余显存≥60000 MiB 的卡上启动。
 共享会延长双方任务时长，且显存需求仍须在实际启动后监控，不能视作固定保证。
 
 ```bash
 export PYTHONPATH="$PWD/extensions/teacher_forced_ensemble:$PWD/src"
-/home/tanyuejun/miniconda3/envs/py310/bin/python -m clarity_tf_ensemble campaign --gpus 5 6 7
+/home/tanyuejun/miniconda3/envs/py310/bin/python -m clarity_tf_ensemble campaign --gpus 5 6 7 \
+  --output-root outputs/ablations/teacher_forced_stagewise_ensemble_seeded_20261005
 ```
 
+示例使用新的 output-root，执行前仍需确认该目录未使用且 SHM 足够；
+不会启动旧同卡严格复跑 pipeline，也不接受严格模式开关。
 资源共享需明确批准后传 `--allow-shared-gpu`，或由获批准操作写入 campaign
 输出目录的 `shared_gpu_approval.json`。没有批准时不自动共享。
 campaign/每个 seed 使用独立锁；不覆盖已有 protocol、run 或日志，也不静默续跑。
 训练 worker 使用独立 session，避免 coordinator/session 结束连带停止训练。
 
 ```text
-outputs/ablations/teacher_forced_stagewise_ensemble/
+<new-output-root>/
 ├── protocol.json                     # 冻结来源、cache、GPU 分配及实际启动记录
 ├── campaign_status.json              # waiting_for_gpu / running / complete / failed
 ├── F_seed_summary.json               # 三个 seed 完成后汇总
-├── historical_controls/              # D42/43/44 compact 快照及校验 manifest
+├── historical_controls/              # 可用历史 D 的 compact 快照；不是新 D 实验
 └── primary/
     ├── F_seed42_rep01/
     ├── F_seed43_rep01/
@@ -112,14 +122,15 @@ metrics 和 recursive predictions。后续 Git 仅保留 compact artifacts，不
 2026-10-04 恢复修订：如果失败 checkpoint 缺少完整 optimizer/scheduler/RNG 状态，
 按用户要求停止对应进程并删除失败 run，不归档；确认目录已删除后，从头重跑预先指定的 rep01。
 完整正式结果仍不覆盖；不能将缺少恢复状态的 weights-only checkpoint 当作精确断点续训。
-当前 E/F 联合恢复调度最多 3 个并发任务、每次启动前至少 80 GiB 可用 SHM，
-E42 两次仍固定原 GPU0，启动需要对应卡空闲。恢复状态见
-`outputs/reproducibility/seed42_same_gpu/recovery_shm.json`。
+当时的 E/F 联合恢复调度最多 3 个并发任务、每次启动前至少 80 GiB 可用 SHM，
+E42 两次固定原 GPU0。这是旧恢复事件，不是新 F campaign 自动依赖的调度器。
+旧 `recovery_shm.json` 若仍保留，仅用于追溯；不据此恢复用户已删除或迁移的 outputs。
 
 ## 6. 结果判断
 
-1. 等 A/B/E stability gates 和 F42/43/44 全部完成，再报告正式 E vs F。
-   E42 使用事先指定 rep01，rep02 仅复现性诊断；不能按测试指标择优。
+1. 新实验等相同执行协议下的 E/F42/43/44 训练和评估全部完成，再报告正式 E vs F。
+   不依赖旧严格审计的 A/B/E gates。历史审计里的 E42 使用事先指定 rep01，
+   rep02 仅复现性诊断；新实验同样应预先指定正式 replicate，不能按测试指标择优。
 2. 做 `E42/43/44 vs F42/43/44` seed-matched：H1/H2/H3 latent MSE、cosine、
    H3/H1 MSE 比值，以及 C-index、one-year AUC（遵循同一可计算性规则）。
 3. 在同一患者/trajectory 上配对，报告 `F − E`（MSE 负值代表改善），
@@ -127,10 +138,11 @@ E42 两次仍固定原 GPU0，启动需要对应卡空闲。恢复状态见
    当成独立患者；三个 seed 不足以支持强显著性结论。
 4. 报告成员误差、ensemble uncertainty、checkpoint step、训练时间和 GPU 差异，
    区分 ensemble 融合收益与单成员 dynamics 质量变化。
-5. D 历史结果可辅助描述：campaign 在旧目录清理前保存 D42/43/44 compact 快照。
-   它们不是同一确定性执行协议的重跑，不能作为严格控制下的 teacher-forcing 因果比较；
+5. D 历史结果可辅助描述：历史 campaign 曾保存 D42/43/44 compact 快照，
+   新 campaign 仅在历史源结果仍可读取时保存快照，不从 Git 或备份自动恢复它们。
+   快照不等于同一执行协议的重跑，不能直接作为 teacher-forcing 因果比较；
    正式 F vs D 结论需后续获批准的 matched D rerun。
 6. MRI encoder 会微调，各 run 的 latent 表征不同；latent MSE 的绝对尺度可能受
    表征改变影响。与 cosine、患者差异、生存指标和成员诊断共同解释，不能仅依据
-   单个 seed 的 H3 MSE 宣称 F 更优。F 本轮没有双 replicate stability gate，
-   不能把 E 的 gate 通过直接视为 F 自身的重复稳定性证据。
+   单个 seed 的 H3 MSE 宣称 F 更优。历史 F 没有双 replicate stability gate，
+   不能把历史 E 的 gate 通过视为 F 自身或新普通运行的重复稳定性证据。

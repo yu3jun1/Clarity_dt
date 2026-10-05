@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+from types import SimpleNamespace
 
 import pytest
 import torch
 
 from clarity_rrt_v3 import evaluate, reproducibility, train
 from clarity_rrt_v3.model import StagewiseDynamics
-from clarity_tf_ensemble import protocol
+from clarity_tf_ensemble import __main__ as runner, protocol
 from clarity_tf_ensemble.__main__ import gpu_ready
 
 
@@ -37,7 +38,12 @@ def test_f_retains_e_with_exactly_three_members(f_config):
     }
 
 
-@pytest.mark.parametrize('drift', ['recursive', 'one_member', 'steps', 'cache', 'nondeterministic'])
+def test_f_has_only_ordinary_training_configuration(f_config):
+    assert 'deterministic' not in f_config
+    protocol.assert_design(f_config)
+
+
+@pytest.mark.parametrize('drift', ['recursive', 'one_member', 'steps', 'cache'])
 def test_f_rejects_protocol_drift(f_config, drift):
     config = copy.deepcopy(f_config)
     if drift == 'recursive':
@@ -48,10 +54,141 @@ def test_f_rejects_protocol_drift(f_config, drift):
         config['training']['total_steps'] = 1200
     elif drift == 'cache':
         config['data']['mri_cache_dir'] = '/tmp/wrong-cache'
-    else:
-        config['deterministic'] = False
     with pytest.raises(AssertionError):
         protocol.assert_design(config)
+
+
+@pytest.mark.parametrize('command', ['train', 'evaluate'])
+def test_f_cli_uses_ordinary_training_api_without_starting_training(tmp_path, monkeypatch, command):
+    monkeypatch.chdir(protocol.REPO_ROOT)
+    monkeypatch.setattr(runner, 'install_runtime', lambda: None)
+    calls = []
+
+    def fake_run(*arguments):
+        calls.append(arguments)
+        return {}
+
+    monkeypatch.setattr(train, 'train_one', fake_run)
+    monkeypatch.setattr(evaluate, 'evaluate_one', fake_run)
+    directory = tmp_path / 'primary/F_seed42_test'
+    directory.mkdir(parents=True)
+    provenance = {'source_sha256': 'combined', 'core_source_sha256': 'core',
+                  'extension_sha256': 'extension'}
+    runner.write_json(directory / 'evaluation_metadata.json', provenance)
+    arguments = [command, '--seed', '42', '--output-root', str(tmp_path),
+                 '--replicate', 'test']
+    runner.main(arguments)
+    assert calls == [(str(protocol.DEFAULT_CONFIG), 'F', 42, 'cuda:0',
+                      str(tmp_path), 'test')]
+    if command == 'evaluate':
+        metrics = runner.read_json(directory / 'metrics.json')
+        assert metrics['extension_provenance'] == provenance
+        assert metrics['ensemble_size'] == 3
+        assert metrics['rrt_training'] is False
+
+
+@pytest.mark.parametrize('command', ['train', 'evaluate', 'run', 'campaign'])
+def test_f_cli_rejects_removed_deterministic_option(command, capsys):
+    with pytest.raises(SystemExit) as error:
+        runner.main([command, '--seed', '42', '--deterministic'])
+    assert error.value.code == 2
+    assert 'unrecognized arguments: --deterministic' in capsys.readouterr().err
+
+
+def test_f_workers_use_one_ordinary_training_path(tmp_path, monkeypatch):
+    args = SimpleNamespace(config=protocol.DEFAULT_CONFIG, output_root=tmp_path,
+                           replicate='test', seed=42)
+    for seed in (42, 43, 44):
+        arguments = runner.job_arguments(args, seed)
+        assert '--deterministic' not in arguments
+        assert arguments[arguments.index('--seed') + 1] == str(seed)
+
+    frozen = {'source_sha256': 'fixed-source'}
+    runner.write_json(tmp_path / 'protocol.json', frozen)
+    monkeypatch.setattr(runner, 'source_fingerprint', lambda: frozen)
+    monkeypatch.setenv('CUDA_VISIBLE_DEVICES', 'GPU-test')
+    commands = []
+
+    def fake_subprocess(command, **kwargs):
+        commands.append(command)
+        assert kwargs['check'] is True
+
+    monkeypatch.setattr(runner.subprocess, 'run', fake_subprocess)
+    runner.run_job(args)
+    assert [command[3] for command in commands] == ['train', 'evaluate']
+    assert all('--deterministic' not in command for command in commands)
+    assert runner.read_json(tmp_path / 'primary/F_seed42_test/status.json')['state'] == 'complete'
+
+
+def test_f_environment_does_not_force_hash_cuda_or_thread_controls(monkeypatch):
+    controls = ('PYTHONHASHSEED', 'CUBLAS_WORKSPACE_CONFIG', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS')
+    for name in controls:
+        monkeypatch.delenv(name, raising=False)
+    ordinary = runner.environment(42, 'GPU-test')
+    assert ordinary['CUDA_VISIBLE_DEVICES'] == 'GPU-test'
+    assert not any(name in ordinary for name in controls)
+    monkeypatch.setenv('OMP_NUM_THREADS', '8')
+    assert runner.environment(42, 'GPU-test')['OMP_NUM_THREADS'] == '8'
+
+
+def test_f_campaign_preflight_does_not_read_old_audit_protocol(tmp_path, monkeypatch, f_config):
+    cache = tmp_path / 'cache'
+    cache.mkdir()
+    runner.write_json(cache / 'manifest.json', {'complete': True})
+    config = copy.deepcopy(f_config)
+    config['data']['mri_cache_dir'] = str(cache)
+    root = tmp_path / 'campaign'
+    args = SimpleNamespace(config=protocol.DEFAULT_CONFIG, output_root=root,
+                           replicate='test', gpus=[5, 6, 7], allow_shared_gpu=False)
+    resolved = []
+
+    def fake_config(path, **kwargs):
+        resolved.append((path, kwargs))
+        return config
+
+    monkeypatch.setattr(train, 'resolve_run_config', fake_config)
+    monkeypatch.setattr(runner, 'assert_design', lambda value: None)
+    frozen = {'source_sha256': 'combined', 'core_source_sha256': 'core',
+              'extension_sha256': 'extension'}
+    monkeypatch.setattr(runner, 'source_fingerprint', lambda: frozen)
+    monkeypatch.setattr(runner, 'snapshot_controls', lambda path: None)
+    monkeypatch.setattr(runner, 'gpu_information', lambda index: {
+        'index': index, 'uuid': f'GPU-{index}', 'memory_used_mib': 50000,
+        'memory_free_mib': 40000, 'utilization_percent': 100,
+    })
+    original_read = runner.read_json
+    reads = []
+
+    def checked_read(path):
+        reads.append(path)
+        assert 'outputs/reproducibility/seed42_same_gpu' not in str(path)
+        return original_read(path)
+
+    monkeypatch.setattr(runner, 'read_json', checked_read)
+
+    def forbidden_launch(*args, **kwargs):
+        raise AssertionError('This test must not launch any GPU workers')
+
+    monkeypatch.setattr(runner.subprocess, 'Popen', forbidden_launch)
+
+    class StopAfterPreflight(Exception):
+        pass
+
+    def stop_wait(seconds):
+        assert seconds == 30
+        raise StopAfterPreflight()
+
+    monkeypatch.setattr(runner.time, 'sleep', stop_wait)
+    with pytest.raises(StopAfterPreflight):
+        runner.campaign(args)
+    assert resolved == [(protocol.DEFAULT_CONFIG, {})]
+    assert reads == [cache / 'manifest.json']
+    scheduled = original_read(root / 'protocol.json')
+    assert scheduled['source_sha256'] == frozen['source_sha256']
+    assert scheduled['behavioral_baseline_commit'] == '9871306'
+    assert 'deterministic_requested' not in scheduled
+    assert 'execution_profile' not in scheduled
+    assert 'actual_launches' not in scheduled
 
 
 def test_e_design_still_rejects_ensemble():

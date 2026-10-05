@@ -1,8 +1,9 @@
 # CLARITY：Stage-wise、Teacher-forcing 与 Dynamics Ensemble
 
-本轮 A/B/E 的同卡 seed42 确定性复现，以及 F seed42/43/44 消融均已完成训练和评估。
-A/B/E 三个 stability gates 均通过，E vs B 的 seed-matched 比较和 F 三个 seeds 的汇总已生成。
-实验完成状态以各输出目录的 JSON 为准，不能把中间 checkpoint 当作完成结果。
+当前训练采用普通 seeded training，数值执行行为回到历史 step2400 实验对应的
+`9871306` 基线；没有默认/显式 strict 两套模式，也不再提供严格确定性训练入口。
+保留实验设计、训练预算、共享缓存和来源记录，不承诺同 seed 重跑逐位一致。
+历史确定性审计的配置、metadata 和 gate 仅用于追溯，不改写成新协议的记录。
 
 ## 实验定义
 
@@ -17,7 +18,7 @@ A/B/E 三个 stability gates 均通过，E vs B 的 seed-matched 比较和 F 三
 
 Ensemble 只复制 dynamics predictor；MRI encoder、text encoder 和 survival head 共享。
 E vs B 检验训练时 predicted-state feedback 的影响；F vs E 检验 teacher-forcing 条件下 ensemble 的影响。
-C/D 定义仍保留在主配置中，但旧执行协议结果不是当前确定性复跑。
+F 在训练和 checkpoint validation 使用真实前状态，测试仍是各成员独立递归后等权融合。
 
 各组沿用固定患者划分、可训练 MRI/Text encoders、survival/CF objectives，
 2400 optimizer steps、240 warmup steps、每 24 steps 验证、batch size 16。
@@ -25,7 +26,7 @@ Latent loss 对阶段/成员等权平均，CF 只参与训练、不参与验证�
 主 checkpoint 是 warmup 后 validation total loss 最小的 `best_val_loss.pt`，相同值保留较早 checkpoint。
 `best_val_cindex.pt` 只作诊断，不据测试性能选择 replicate 或 checkpoint。
 
-## 数据与确定性
+## 数据、随机种子与来源记录
 
 当前 A–F 消融使用 MU-Glioma-Post，固定患者级划分见 [data/splits.json](data/splits.json)。
 train/validation/test 的 trajectory/patient 数为 74/38、11/5、16/8；
@@ -34,36 +35,24 @@ A/C 的 train/validation all-pair/patient 数为 382/38、56/5。
 
 MRI 从 `/dev/shm/clarity_mri_cache` 的 float32 `.npy` 缓存读取。
 缓存与并发 DataLoader 都占用共享内存，应按并发峰值预留空间；磁盘输出目录清理不会释放 `/dev/shm`。
-UCSF 数据集的本地内容、目录结构和使用限制见 [数据集说明](docs/UCSF_POSTOP_GLIOMA_DATASET.md)；本轮 F 不切换数据集。
+UCSF 数据集的本地内容、目录结构和使用限制见 [数据集说明](docs/UCSF_POSTOP_GLIOMA_DATASET.md)；
+新增数据集说明不表示本轮 A–F 自动切换数据集。
 
-确定性复跑使用 strict deterministic algorithms、cuDNN deterministic、关闭 TF32/benchmark、
-math-only SDPA，以及固定 startup seed、cuBLAS workspace 和 DataLoader worker/generator seeds。
-metadata 记录 GPU 型号/UUID、PyTorch/CUDA/cuDNN、配置/数据/源码及初始化/批次顺序指纹。
-严格确定性不保证跨硬件或库版本逐位一致。
+训练固定 Python、NumPy、PyTorch 随机种子及训练 DataLoader 的 shuffle generator，
+不额外启用严格 deterministic algorithms、强制 cuDNN/TF32/SDPA 数值模式或严格 worker seeding。
+GPU 算子、硬件和库版本仍可能影响重跑结果；相同 seed 不等于逐位一致。
+建议从新进程启动；入口不会主动清除父 shell 已设置的环境变量，
+也不重置同一进程先前被其他代码改变的 backend 设置。
+metadata 继续记录 GPU 型号/UUID、PyTorch/CUDA/cuDNN、配置/数据/源码等来源信息。
+读取旧保存配置时，内存中忽略旧 `deterministic` 键，不据此启用另一种执行模式，
+也不写回或改写历史配置和结果。
 
 官方 CLARITY commit 固定为 `dadb82241a24f5ec5e4e4dc994e3116fd4a9da04`。
 主配置：[configs/pure_rrt_v3.yaml](configs/pure_rrt_v3.yaml)；
 E 配置：[configs/ablations/teacher_forced_stagewise.yaml](configs/ablations/teacher_forced_stagewise.yaml)；
 F 配置：[extensions/teacher_forced_ensemble/configs/F.yaml](extensions/teacher_forced_ensemble/configs/F.yaml)。
-F 使用独立扩展，不修改运行中 A–E 的冻结源码；同时记录 core 和 extension 指纹。
-
-## 完整 A–F 结果与保留范围
-
-2026-10-05 按用户澄清更正清理范围：保留完整 A–F 消融记录，恢复被误移出的历史结果。
-仅排除 `git:6584f6d` 同一首轮的 A/B/C/D seed42，其 A 的 H3 MSE 为 `0.6268193917348981`。
-这不是删除所有 seed42：后续复跑的 A seed42（H3 MSE `0.18340921914204955`）、
-B/C/D seed42，以及当前 A/B/E 确定性 replicate 均保留。
-
-|记录|结果入口|协议说明|
-|---|---|---|
-|A/B/C/D，seed42/43/44|[step2400 汇总](outputs/pure_rrt_v3_step2400/summary.md)|历史主 factorial；seed42 为后续复跑，不是被排除首轮|
-|A/B，seed42 各两次；E，seed42 两次及 seed43/44|[复现性审计](outputs/reproducibility/seed42_same_gpu/audit_summary.md)|当前确定性协议；rep02 不算额外 seed|
-|F，seed42/43/44|[F seed 汇总](outputs/ablations/teacher_forced_stagewise_ensemble/F_seed_summary.json)|当前 Teacher-forced Stage-wise Ensemble|
-|E 旧协议 seed42|[旧 E42 指标](outputs/ablations/teacher_forced_stagewise/primary/E_seed42/metrics.json)|独立历史执行记录，不替换当前 E42|
-
-完整路径、指标校验和及重复快照映射见 [实验记录索引](outputs/ablation_inventory.json)。
-历史协议与当前确定性协议不可直接混合成一组 matched comparison；旧实验族的组别定义也可能不同。
-`historical/` 中的四份 ABCD42 rep02 和旧 E42 是对应原目录的结果副本，不是额外独立实验。
+F 使用独立扩展，每次 campaign 冻结启动时的 current core/extension 指纹，
+不依赖旧 reproducibility audit 的 protocol 文件。
 
 ## 文档与目录
 
@@ -71,38 +60,21 @@ B/C/D seed42，以及当前 A/B/E 确定性 replicate 均保留。
 当前实现与原始提案不一致时，以活动配置和执行协议为准。
 
 ```text
-src/clarity_rrt_v3/                     # A–E 核心实现，实验运行期间冻结
+src/clarity_rrt_v3/                     # A–E 核心实现与历史结果分析工具
 configs/                              # 主 factorial 与 E 配置
-scripts/                              # 训练及 reproducibility 入口
+scripts/                              # 常规训练入口；旧严格复跑入口已退役
 extensions/teacher_forced_ensemble/    # F 的隔离实现、配置与测试
 data/splits.json                       # 固定患者划分，不存放原始 MRI
-docs/                                 # 数据集、实验方案、执行协议；legacy 为历史配套文档
-outputs/
-├── ablation_inventory.json           # 完整 A–F 记录、协议区分和重复副本映射
-├── reproducibility/seed42_same_gpu/   # A/B/E 当前复现性审计
-│   ├── primary/                      # 正式 replicate 与独立 metadata
-│   ├── historical/                   # 后续历史复跑副本；排除首轮 ABCD42
-│   ├── retention_correction.json     # 更正后的保留/排除范围
-│   ├── recovery_shm.json             # 重跑队列、资源限制及当前协调状态
-│   ├── {A,B,E}_seed42_stability.json  # 三个稳定性检查均通过
-│   └── comparison/                   # 已生成正式配对比较
-├── ablations/teacher_forced_stagewise_ensemble/
-│   ├── primary/                      # F42/43/44
-│   ├── historical_controls/          # D compact 快照，仅作历史描述性对照
-│   ├── F_seed_summary.json           # 已完成 F42/43/44 汇总
-│   └── campaign_status.json
-├── pure_rrt_v3_step2400/primary/      # A/B/C/D，各 seed42/43/44 完整历史记录
-├── ablations/teacher_forced_stagewise/ # 旧 E42，保留并标注协议
-├── {stagewise_recursive,pure_rrt_v3,pure_rrt_v3_clarity_allpair,legacy_open_loop_aux}/
-│                                     # 早期不同执行协议，保留追溯、不自动合并
-└── diagnostics/                      # 配套历史 survival diagnostic
+docs/                                 # 数据集、实验方案、历史执行与整理记录
+outputs/                              # 本地实验结果；新实验使用新的 output-root
 ```
 
-最终 [E42/43/44 vs B42/43/44 报告](outputs/reproducibility/seed42_same_gpu/comparison/seed_matched_summary.md)
-比较 H1/H2/H3、H3/H1 及 patient-level differences；
-[F seed 汇总](outputs/ablations/teacher_forced_stagewise_ensemble/F_seed_summary.json) 保留三个 seeds 的指标。
-seed42 正式使用预先指定的 rep01；rep02 仅检查复现性，不能计为另一个 seed。
-B43/44 与历史 D 对照存在执行协议差异，应明确标注；3 个 seeds、8 位 test 患者的分析仍属探索性。
+历史审计曾生成 A/B/E seed42 双 replicate、E42/43/44 vs B42/43/44 的配对比较，
+以及 F42/43/44 的汇总。这些是历史执行事实，不表示整理或迁移后的每个目录仍存在。
+旧 `outputs/pure_rrt_v3_step2400/` 是当前普通 seeded 行为的参考记录；
+旧严格协议的记录不能直接与新普通运行混合成 execution-protocol-matched comparison。
+历史 stability gate 只解释当时那组结果，不是新普通训练或 F campaign 的启动前提。
+历史 retention/cleanup manifest 是操作事件，不用它们自动恢复用户已经删除或迁移的目录。
 
 ## 验证与运行
 
@@ -111,24 +83,39 @@ conda run -n py310 env PYTHONPATH="$PWD/src:$PWD/extensions/teacher_forced_ensem
   python -m pytest -q tests extensions/teacher_forced_ensemble/tests
 ```
 
-A/B/E 顺序复现入口为 `scripts/reproducibility/run_same_gpu.sh`；
-F 的资源感知调度入口为 `python -m clarity_tf_ensemble campaign --gpus 5 6 7`，
-需要设置上述 PYTHONPATH。详细规则见 [复现性方案](docs/seed42_reproducibility_audit.md)
-和 [F 实验方案](docs/teacher_forced_stagewise_ensemble_F_plan.md)。
-已有 run 不覆盖、不静默续跑；失败后不能直接重复启动同一个 campaign。
-恢复协调流程前应核对残留进程、锁、源码指纹和共享内存容量。
-用户于 2026-10-04 指定：无法完整续训的失败记录删除、不归档，再从头重跑；完整结果不覆盖。
-当前恢复调度合计最多 3 个 E/F 任务，启动前要求至少 80 GiB 可用共享内存；
-E42 rep01/rep02 优先在原 GPU0 连续运行，不与其他用户抢占忙卡。
+下面只是启动示例，先确认 GPU 空闲且共享内存足够，并使用 replicate 隔离的新输出目录。
+训练和评估使用同一个 config、seed、replicate 与 output-root；不要覆盖旧记录。
 
-## 结果与清理规则
+```bash
+conda run -n py310 env CUDA_VISIBLE_DEVICES=4 PYTHONPATH="$PWD/src" \
+  python -m clarity_rrt_v3.train --config configs/pure_rrt_v3.yaml \
+  --variant B --seed 42 --device cuda:0 --replicate rep01 \
+  --output-root outputs/runs/step2400_seeded_20261005
 
-Git 只提交 compact artifacts：config、metadata、metrics、gates、报告、患者预测和配对 CSV。
-`outputs/**/*.log`、权重和训练 history CSV 留在本地；此前 tracked 的输出日志已取消跟踪。
+conda run -n py310 env CUDA_VISIBLE_DEVICES=4 PYTHONPATH="$PWD/src" \
+  python -m clarity_rrt_v3.evaluate run --config configs/pure_rrt_v3.yaml \
+  --variant B --seed 42 --device cuda:0 --replicate rep01 \
+  --output-root outputs/runs/step2400_seeded_20261005
 
-先前提交 `0606430` 的整族退役范围过宽，现已从本地备份恢复，未做整仓 reset 或 Git 历史重写。
-原 [cleanup manifest](outputs/reproducibility/seed42_same_gpu/cleanup_manifest.json) 仅记录当时的清理事件，
-当前保留策略以 [retention correction](outputs/reproducibility/seed42_same_gpu/retention_correction.json) 为准。
-当前 A/B/E/F 的 77 份 compact results 校验和不变，最终比较仍使用其原先指定的 B43/B44。
-备份 tag `pre-cleanup-2026-10-03` 已推送；后续本地更正提交不自动推送。
-完整执行记录见 [目录整理记录](docs/repository_cleanup_plan.md)。
+conda run -n py310 env PYTHONPATH="$PWD/extensions/teacher_forced_ensemble:$PWD/src" \
+  python -m clarity_tf_ensemble campaign --gpus 5 6 7 \
+  --output-root outputs/ablations/teacher_forced_stagewise_ensemble_seeded_20261005
+```
+
+A/C/D 使用主配置及对应 `--variant`；E 使用 E 配置及 `--variant E`。
+旧 `scripts/reproducibility/run_same_gpu.sh` 和严格复跑 pipeline 不再作为训练入口。
+F 的资源感知调度和实验设计见 [F 实验方案](docs/teacher_forced_stagewise_ensemble_F_plan.md)；
+历史同卡复现性事实见 [已退役审计说明](docs/seed42_reproducibility_audit.md)。
+上述 `--replicate rep01` 训练入口和 F campaign 不覆盖已有 run、不静默续跑；
+恢复前应核对进程、锁、源码指纹和共享内存容量。
+weights-only checkpoint 缺少 optimizer/scheduler/RNG 状态时，不能当作精确断点续训。
+
+## 结果管理
+
+Git 只提交 compact artifacts：config、metadata、metrics、报告、患者预测和配对 CSV。
+`outputs/**/*.log`、权重和训练 history CSV 留在本地，不提交完整训练日志。
+实验完成状态以训练预算、评估 metadata 和完整结果产物为准，不能把中间 checkpoint 当作完成结果。
+配对比较应匹配 seed、数据划分、训练预算和执行协议；replicate 不算额外独立 seed，
+不能按测试指标择优。3 个 seeds、8 位 test 患者的分析仍属探索性。
+之前目录整理与保留决策见 [历史整理记录](docs/repository_cleanup_plan.md)；
+本次训练行为调整不整理、恢复或改写 outputs。

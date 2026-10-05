@@ -32,7 +32,7 @@ from .data import (
 )
 from .model import StagewiseDynamics
 from .reproducibility import (
-    collect_metadata, configure_reproducibility, seed_worker, state_sha256, utc_now,
+    collect_metadata, state_sha256, utc_now,
 )
 
 
@@ -192,10 +192,8 @@ def build_loaders(
             ),
             shuffle=name == "train",
             generator=(
-                torch.Generator().manual_seed(seed if name == "train" else seed + 1)
-                if name == "train" or config.get("deterministic") else None
+                torch.Generator().manual_seed(seed) if name == "train" else None
             ),
-            worker_init_fn=seed_worker if config.get("deterministic") else None,
             num_workers=int(training["num_workers"]),
             collate_fn=dataset.collate,
         )
@@ -363,14 +361,14 @@ def run_directory(
     return Path(config["output_root"]) / "primary" / f"{variant}_seed{seed}{suffix}"
 
 
-def resolve_run_config(config_path, output_root=None, replicate_id=None, deterministic=False):
+def resolve_run_config(config_path, output_root=None, replicate_id=None):
+    """Resolve a step2400 run without inheriting retired execution switches."""
     config = load_config(config_path)
     if output_root is not None:
         config["output_root"] = str(output_root)
     if replicate_id is not None:
         config["replicate_id"] = replicate_id
-    if deterministic:
-        config["deterministic"] = True
+    config.pop("deterministic", None)
     return config
 
 
@@ -781,13 +779,11 @@ def train_one(
     device_name: str,
     output_root: str | Path | None = None,
     replicate_id: str | None = None,
-    deterministic: bool = False,
 ) -> Path:
-    config = resolve_run_config(config_path, output_root, replicate_id, deterministic)
+    config = resolve_run_config(config_path, output_root, replicate_id)
     config["active_seed"] = seed
     assert_experiment_design(config)
     upstream_commit = assert_upstream_commit(config)
-    configure_reproducibility(seed, bool(config.get("deterministic")))
     seed_everything(seed)
     device = torch.device(device_name)
     run_dir = run_directory(config, variant, seed)
@@ -796,9 +792,7 @@ def train_one(
     ):
         raise FileExistsError(f"Refusing to overwrite replicate: {run_dir}")
     run_dir.mkdir(parents=True, exist_ok=True)
-    metadata = collect_metadata(config, variant, seed, device)
     metadata_path = run_dir / "run_metadata.json"
-    metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     variant_config = config["variants"][variant]
     upstream_train, _, _, concordance = configure_upstream(config["upstream_root"])
     clarity = upstream_train.build_model(upstream_args(config, seed), device)
@@ -809,6 +803,9 @@ def train_one(
     ).to(device)
     loaders, datasets = build_loaders(config, seed, variant)
     optimizer, scheduler = build_optimizer(config, model)
+    # Match 9871306's initialization order: metadata must not initialize CUDA
+    # ahead of the historical model -> loaders -> optimizer construction.
+    metadata = collect_metadata(config, variant, seed, device)
     metadata["initial_trainable_state_sha256"] = state_sha256(model)
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     resolved = dict(config)
@@ -860,14 +857,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--device", default="cuda:0")
     result.add_argument("--output-root")
     result.add_argument("--replicate", dest="replicate_id")
-    result.add_argument("--deterministic", action="store_true")
     return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     train_one(args.config, args.variant, args.seed, args.device,
-              args.output_root, args.replicate_id, args.deterministic)
+              args.output_root, args.replicate_id)
     return 0
 
 

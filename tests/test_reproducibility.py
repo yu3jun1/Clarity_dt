@@ -1,83 +1,165 @@
 from __future__ import annotations
 
 import csv
+import inspect
 import json
-import random
 
-import numpy as np
 import pytest
 import torch
 
 from clarity_rrt_v3.replicate_audit import (
     assess_pair, history_diagnostics, patient_means, seed_matched_comparison,
 )
-from clarity_rrt_v3.reproducibility import configure_reproducibility, seed_worker, state_sha256
+from clarity_rrt_v3 import evaluate, replicate_audit, reproducibility, train
+from clarity_rrt_v3.reproducibility import state_sha256
 from clarity_rrt_v3.train import load_config, resolve_run_config, run_directory
 
 
 def test_replicate_output_isolation():
     config = load_config("configs/pure_rrt_v3.yaml")
     assert str(run_directory(config, "A", 42)).endswith("primary/A_seed42")
-    resolved = resolve_run_config("configs/pure_rrt_v3.yaml", "/tmp/audit", "rep01", True)
+    resolved = resolve_run_config("configs/pure_rrt_v3.yaml", "/tmp/audit", "rep01")
     assert run_directory(resolved, "A", 42).as_posix() == "/tmp/audit/primary/A_seed42_rep01"
-    assert resolved["deterministic"]
+    assert "deterministic" not in resolved
     assert config["output_root"] == "outputs/pure_rrt_v3_step2400"
     resolved["replicate_id"] = "../../overwrite"
     with pytest.raises(ValueError):
         run_directory(resolved, "A", 42)
 
 
-def test_strict_determinism_requires_startup_hash_seed(monkeypatch):
+def test_step2400_discards_retired_switch_without_rewriting_saved_config(tmp_path):
+    config = load_config("configs/pure_rrt_v3.yaml")
+    config["deterministic"] = True
+    saved = tmp_path / "saved_audit_config.yaml"
+    saved.write_text(json.dumps(config))
+    ordinary = resolve_run_config(saved)
+    assert "deterministic" not in ordinary
+    assert load_config(saved)["deterministic"] is True
+
+
+@pytest.mark.parametrize("module,arguments", [
+    (train, ["--variant", "B", "--seed", "42"]),
+    (evaluate, ["run", "--variant", "B", "--seed", "42"]),
+])
+def test_retired_training_flag_is_rejected(module, arguments):
+    assert not hasattr(module.parser().parse_args(arguments), "deterministic")
+    with pytest.raises(SystemExit) as error:
+        module.parser().parse_args([*arguments, "--deterministic"])
+    assert error.value.code == 2
+
+
+def test_retired_training_api_is_removed():
+    for function in (resolve_run_config, train.train_one, evaluate.evaluate_one):
+        assert "deterministic" not in inspect.signature(function).parameters
+    assert not hasattr(reproducibility, "configure_reproducibility")
+    assert not hasattr(reproducibility, "seed_worker")
+    assert not hasattr(replicate_audit, "run_experiment")
+    assert not hasattr(replicate_audit, "pipeline")
+
+
+def test_step2400_loader_protocol_has_no_execution_switch(monkeypatch):
+    class DummyDataset(torch.utils.data.Dataset):
+        def __len__(self):
+            return 4
+
+        def __getitem__(self, index):
+            return index
+
+        @staticmethod
+        def collate(items):
+            return items
+
+    monkeypatch.setattr(train, "build_datasets", lambda config: {
+        name: DummyDataset() for name in ("train", "validation", "test")
+    })
+    config = load_config("configs/pure_rrt_v3.yaml")
+    # Even an unresolved historical config cannot activate a separate path.
+    config["deterministic"] = True
+    loaders, _ = train.build_loaders(config, seed=42, variant="B")
+    assert loaders["train"].generator.initial_seed() == 42
+    for name in ("train", "validation", "test"):
+        assert loaders[name].worker_init_fn is None
+    for name in ("validation", "test"):
+        assert loaders[name].generator is None
+
+
+def test_step2400_metadata_does_not_initialize_cuda_before_model(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    events = []
+    seeds = []
+
+    class Model:
+        def to(self, device):
+            return self
+
+    class StopBeforeTraining(Exception):
+        pass
+
+    def build_model(args, device):
+        events.append("model")
+        return Model()
+
+    def build_loaders(*args):
+        events.append("loaders")
+        return {}, {}
+
+    def build_optimizer(*args):
+        events.append("optimizer")
+        return None, None
+
+    def collect_metadata(*args):
+        assert events == ["model", "loaders", "optimizer"]
+        raise StopBeforeTraining
+
+    monkeypatch.setattr(train, "assert_upstream_commit", lambda config: config["upstream_commit"])
+    monkeypatch.setattr(train, "seed_everything", seeds.append)
     monkeypatch.delenv("PYTHONHASHSEED", raising=False)
-    with pytest.raises(RuntimeError, match="PYTHONHASHSEED=42"):
-        configure_reproducibility(42, True)
+    monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
+
+    def forbidden_control(*args, **kwargs):
+        raise AssertionError("training must not change numerical backend settings")
+
+    monkeypatch.setattr(torch, "use_deterministic_algorithms", forbidden_control)
+    for name in ("enable_flash_sdp", "enable_mem_efficient_sdp", "enable_cudnn_sdp", "enable_math_sdp"):
+        monkeypatch.setattr(torch.backends.cuda, name, forbidden_control)
+    monkeypatch.setattr(train, "configure_upstream", lambda root: (SimpleNamespace(build_model=build_model), None, None, None))
+    monkeypatch.setattr(train, "StagewiseDynamics", lambda clarity, **kwargs: clarity)
+    monkeypatch.setattr(train, "build_loaders", build_loaders)
+    monkeypatch.setattr(train, "build_optimizer", build_optimizer)
+    monkeypatch.setattr(train, "collect_metadata", collect_metadata)
+    with pytest.raises(StopBeforeTraining):
+        train.train_one("configs/pure_rrt_v3.yaml", "B", 42, "cpu", output_root=tmp_path)
+    assert seeds == [42]
 
 
-def test_strict_determinism_controls(monkeypatch):
-    monkeypatch.setenv("PYTHONHASHSEED", "42")
-    monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
-    algorithm, warn = torch.are_deterministic_algorithms_enabled(), torch.is_deterministic_algorithms_warn_only_enabled()
-    previous = {
-        "benchmark": torch.backends.cudnn.benchmark,
-        "deterministic": torch.backends.cudnn.deterministic,
-        "cudnn_tf32": torch.backends.cudnn.allow_tf32,
-        "matmul_tf32": torch.backends.cuda.matmul.allow_tf32,
-        "flash": torch.backends.cuda.flash_sdp_enabled(),
-        "efficient": torch.backends.cuda.mem_efficient_sdp_enabled(),
-        "cudnn": torch.backends.cuda.cudnn_sdp_enabled(),
-        "math": torch.backends.cuda.math_sdp_enabled(),
-    }
-    monkeypatch.setenv("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
-    try:
-        configure_reproducibility(42, True)
-        assert torch.are_deterministic_algorithms_enabled()
-        assert not torch.is_deterministic_algorithms_warn_only_enabled()
-        assert torch.backends.cudnn.deterministic
-        assert not torch.backends.cudnn.benchmark
-        assert not torch.backends.cuda.matmul.allow_tf32
-        assert not torch.backends.cudnn.allow_tf32
-        assert not torch.backends.cuda.flash_sdp_enabled()
-        assert not torch.backends.cuda.mem_efficient_sdp_enabled()
-        assert not torch.backends.cuda.cudnn_sdp_enabled()
-        assert torch.backends.cuda.math_sdp_enabled()
-    finally:
-        torch.use_deterministic_algorithms(algorithm, warn_only=warn)
-        torch.backends.cudnn.benchmark = previous["benchmark"]
-        torch.backends.cudnn.deterministic = previous["deterministic"]
-        torch.backends.cudnn.allow_tf32 = previous["cudnn_tf32"]
-        torch.backends.cuda.matmul.allow_tf32 = previous["matmul_tf32"]
-        torch.backends.cuda.enable_flash_sdp(previous["flash"])
-        torch.backends.cuda.enable_mem_efficient_sdp(previous["efficient"])
-        torch.backends.cuda.enable_cudnn_sdp(previous["cudnn"])
-        torch.backends.cuda.enable_math_sdp(previous["math"])
+def test_metadata_records_versions_without_changing_execution(monkeypatch):
+    config = resolve_run_config("configs/pure_rrt_v3.yaml")
+    monkeypatch.setattr(reproducibility.importlib.metadata, "version", lambda name: "package-version")
+    monkeypatch.setattr(torch.version, "cuda", "cuda-version")
+    monkeypatch.setattr(torch.backends.cudnn, "version", lambda: 9000)
+    monkeypatch.setattr(reproducibility, "file_sha256", lambda path: "data-hash")
+    monkeypatch.setattr(reproducibility, "source_sha256", lambda: "source-hash")
+    monkeypatch.setattr(reproducibility.subprocess, "check_output", lambda *args, **kwargs: "")
+
+    def forbidden_control(*args, **kwargs):
+        raise AssertionError("metadata must only observe numerical backend settings")
+
+    monkeypatch.setattr(torch, "use_deterministic_algorithms", forbidden_control)
+    for name in ("enable_flash_sdp", "enable_mem_efficient_sdp", "enable_cudnn_sdp", "enable_math_sdp"):
+        monkeypatch.setattr(torch.backends.cuda, name, forbidden_control)
+    metadata = reproducibility.collect_metadata(config, "B", 42, torch.device("cpu"))
+    assert metadata["pytorch_version"] == str(torch.__version__)
+    assert metadata["cuda_version"] == "cuda-version"
+    assert metadata["cudnn_version"] == 9000
+    assert metadata["behavioral_baseline_commit"] == "9871306"
+    assert "execution_profile" not in metadata
+    assert "requested" not in metadata["determinism"]
+    assert metadata["dataloader"]["worker_init_fn"] is None
+    assert metadata["dataloader"]["independent_validation_generator"] is False
 
 
-def test_worker_seeds_and_parameter_fingerprint(monkeypatch):
-    monkeypatch.setattr(torch, "initial_seed", lambda: 456)
-    seed_worker(0)
-    one = random.random(), np.random.random()
-    seed_worker(1)
-    assert one == (random.random(), np.random.random())
+def test_parameter_fingerprint():
     model = torch.nn.Linear(2, 2).to(torch.bfloat16)
     initial = state_sha256(model)
     assert initial == state_sha256(model)

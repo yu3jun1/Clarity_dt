@@ -41,8 +41,7 @@ def job_arguments(args, seed):
 
 
 def environment(seed, gpu_uuid):
-    return dict(os.environ, CUDA_VISIBLE_DEVICES=gpu_uuid, PYTHONHASHSEED=str(seed),
-                CUBLAS_WORKSPACE_CONFIG=':4096:8', OMP_NUM_THREADS='1', MKL_NUM_THREADS='1',
+    return dict(os.environ, CUDA_VISIBLE_DEVICES=gpu_uuid,
                 TOKENIZERS_PARALLELISM='false', HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1')
 
 
@@ -112,17 +111,16 @@ def campaign(args):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if (root / 'protocol.json').exists():
             raise FileExistsError('Campaign already exists; never overwrite its protocol')
-        config = train.load_config(args.config)
+        config = train.resolve_run_config(args.config)
         assert_design(config)
         frozen = source_fingerprint()
-        baseline = read_json(REPO_ROOT / 'outputs/reproducibility/seed42_same_gpu/protocol.json')
-        if frozen['core_source_sha256'] != baseline['source_sha256']:
-            raise RuntimeError('Current A–E frozen core changed')
         if not read_json(Path(config['data']['mri_cache_dir']) / 'manifest.json').get('complete'):
             raise RuntimeError('Requested shared-memory MRI cache is incomplete')
         assignments = dict(zip((42, 43, 44), args.gpus))
         protocol = {**frozen, 'created_at_utc': utc_now(), 'experiment': 'F',
                     'definition': 'Teacher-forced Stage-wise Ensemble; 3 independent dynamics members, no RRT training',
+                    'behavioral_baseline_commit': '9871306',
+                    'source_baseline': 'Current core/extension frozen at this campaign start; no dependency on old audit output files',
                     'seeds': [42, 43, 44], 'formal_replicate': args.replicate,
                     'config': str(Path(args.config).resolve()), 'assignments': assignments,
                     'gpu_inventory_at_schedule': [gpu_information(gpu) for gpu in args.gpus],
@@ -183,7 +181,7 @@ def campaign(args):
                 metrics.append(read_json(directory / 'metrics.json'))
             write_json(root / 'F_seed_summary.json', {'variant': 'F', 'seeds': [42, 43, 44],
                 'summary': evaluate.summarize_runs(metrics), 'runs': metrics,
-                'note': 'E-vs-F seed-matched comparison must wait for all A/B/E stability gates; historical D controls are descriptive only'})
+                'note': 'E-vs-F comparisons require matching seeds and training/evaluation protocols. Historical controls are descriptive unless protocol matching is established.'})
             write_json(root / 'campaign_status.json', {'state': 'complete', 'completed_at_utc': utc_now(),
                        'completed_seeds': [42, 43, 44], 'pending_seeds': []})
         except Exception as error:
@@ -192,7 +190,7 @@ def campaign(args):
             raise
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('train', 'evaluate', 'run', 'campaign'))
     parser.add_argument('--config', default=str(DEFAULT_CONFIG))
@@ -201,7 +199,7 @@ def main():
     parser.add_argument('--replicate', default='rep01')
     parser.add_argument('--gpus', type=int, nargs=3, default=[5, 6, 7])
     parser.add_argument('--allow-shared-gpu', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     os.chdir(REPO_ROOT)
     if args.command == 'campaign':
         if len(set(args.gpus)) != 3 or any(gpu not in range(8) for gpu in args.gpus):
@@ -215,9 +213,9 @@ def main():
         return
     install_runtime()
     if args.command == 'train':
-        train.train_one(args.config, 'F', args.seed, 'cuda:0', args.output_root, args.replicate, True)
+        train.train_one(args.config, 'F', args.seed, 'cuda:0', args.output_root, args.replicate)
     else:
-        metrics = evaluate.evaluate_one(args.config, 'F', args.seed, 'cuda:0', args.output_root, args.replicate, True)
+        metrics = evaluate.evaluate_one(args.config, 'F', args.seed, 'cuda:0', args.output_root, args.replicate)
         directory = Path(args.output_root) / 'primary' / f'F_seed{args.seed}_{args.replicate}'
         metadata = read_json(directory / 'evaluation_metadata.json')
         metrics['ensemble_size'] = 3

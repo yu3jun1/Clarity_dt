@@ -25,8 +25,6 @@ def assert_design(config):
     for field in ('upstream_root', 'upstream_commit', 'data', 'model', 'training'):
         if config[field] != baseline[field]:
             raise AssertionError(f'F must retain E baseline settings: {field}')
-    if not config.get('deterministic'):
-        raise AssertionError('The F campaign requires strict deterministic training')
 
 
 def extension_fingerprint():

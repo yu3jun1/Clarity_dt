@@ -1,4 +1,4 @@
-"""Deterministic execution controls and auditable run provenance."""
+"""Read-only environment and run provenance for step2400 experiments."""
 
 from __future__ import annotations
 
@@ -7,13 +7,11 @@ import importlib.metadata
 import json
 import os
 import platform
-import random
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
-import numpy as np
 import torch
 
 
@@ -27,33 +25,6 @@ def file_sha256(path: str | Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def seed_worker(worker_id: int) -> None:
-    # DataLoader has already assigned a reproducible torch seed to this worker.
-    worker_seed = torch.initial_seed() % 2**32
-    random.seed(worker_seed)
-    np.random.seed(worker_seed)
-
-
-def configure_reproducibility(seed: int, deterministic: bool) -> None:
-    if not deterministic:
-        return  # Preserve the historical training protocol for old launchers.
-    if os.environ.get("PYTHONHASHSEED") != str(seed):
-        raise RuntimeError(f"Deterministic runs require PYTHONHASHSEED={seed} at launch")
-    if torch.cuda.is_initialized():
-        raise RuntimeError("Configure determinism before initializing CUDA")
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-    torch.use_deterministic_algorithms(True, warn_only=False)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cuda.matmul.allow_tf32 = False
-    torch.backends.cudnn.allow_tf32 = False
-    # Fused attention backward can be nondeterministic. Pin the math backend.
-    torch.backends.cuda.enable_flash_sdp(False)
-    torch.backends.cuda.enable_mem_efficient_sdp(False)
-    torch.backends.cuda.enable_cudnn_sdp(False)
-    torch.backends.cuda.enable_math_sdp(True)
 
 
 def state_sha256(model: torch.nn.Module) -> str:
@@ -117,6 +88,7 @@ def collect_metadata(
     return {
         "created_at_utc": utc_now(), "variant": variant, "seed": seed,
         "replicate_id": config.get("replicate_id"),
+        "behavioral_baseline_commit": "9871306",
         "python": platform.python_version(), "platform": platform.platform(),
         "packages": packages, "pytorch_version": str(torch.__version__),
         "cuda_version": torch.version.cuda, "cudnn_version": torch.backends.cudnn.version(),
@@ -126,7 +98,6 @@ def collect_metadata(
             "PYTHONHASHSEED", "CUBLAS_WORKSPACE_CONFIG", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
         )},
         "determinism": {
-            "requested": bool(config.get("deterministic", False)),
             "algorithms_enabled": torch.are_deterministic_algorithms_enabled(),
             "warn_only": torch.is_deterministic_algorithms_warn_only_enabled(),
             "cudnn_deterministic": torch.backends.cudnn.deterministic,
@@ -141,8 +112,8 @@ def collect_metadata(
         "dataloader": {
             "num_workers": int(config["training"]["num_workers"]),
             "batch_size": int(config["training"]["batch_size"]),
-            "worker_init_fn": "seed_worker" if config.get("deterministic") else None,
-            "independent_validation_generator": bool(config.get("deterministic")),
+            "worker_init_fn": None,
+            "independent_validation_generator": False,
             "shuffle_seed": seed, "drop_last": False, "persistent_workers": False,
         },
         "git_commit": commit, "tracked_source_dirty": dirty,
