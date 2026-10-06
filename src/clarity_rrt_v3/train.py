@@ -781,12 +781,24 @@ def train_one(
     replicate_id: str | None = None,
 ) -> Path:
     config = resolve_run_config(config_path, output_root, replicate_id)
-    config["active_seed"] = seed
     assert_experiment_design(config)
+    return train_run(config, variant, seed, device_name, run_directory(config, variant, seed))
+
+
+def train_run(
+    config: Mapping[str, Any],
+    variant: str,
+    seed: int,
+    device_name: str,
+    run_dir: str | Path,
+) -> Path:
+    """Train the configured dynamics using the shared step2400 implementation."""
+    config = dict(config)
+    config["active_seed"] = seed
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
-    run_dir = run_directory(config, variant, seed)
+    run_dir = Path(run_dir)
     if config.get("replicate_id") and any(
         (run_dir / name).exists() for name in ("config.yaml", "history.csv", PRIMARY_CHECKPOINT_NAME)
     ):

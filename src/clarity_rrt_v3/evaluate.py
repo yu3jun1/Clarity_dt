@@ -27,7 +27,7 @@ from .train import (
     seed_everything,
     upstream_args,
 )
-from .reproducibility import collect_metadata
+from .reproducibility import collect_metadata, file_sha256
 
 
 def training_reference(dataset, horizon: int) -> tuple[np.ndarray, np.ndarray]:
@@ -260,8 +260,34 @@ def evaluate_one(
     replicate_id: str | None = None,
 ) -> dict[str, Any]:
     config = resolve_run_config(config_path, output_root, replicate_id)
-    config["active_seed"] = seed
     assert_experiment_design(config)
+    run_dir = run_directory(config, variant, seed)
+    metrics, rows, representation = evaluate_run(
+        config, variant, seed, device_name, run_dir / PRIMARY_CHECKPOINT_NAME, run_dir,
+    )
+    metrics["representation_sanity"] = representation
+    if int(config["variants"][variant]["ensemble_size"]) > 1:
+        metrics["uncertainty"] = uncertainty_metrics(rows)
+        metrics["member_diagnostics"] = member_diagnostics(rows)
+    (run_dir / "metrics.json").write_text(
+        json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
+    )
+    return metrics
+
+
+def evaluate_run(
+    config: Mapping[str, Any],
+    variant: str,
+    seed: int,
+    device_name: str,
+    checkpoint_path: str | Path,
+    run_dir: str | Path,
+    prediction_fn=recursive_predictions,
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any]]:
+    """Evaluate an explicit checkpoint into an explicit directory."""
+    config = dict(config)
+    config["active_seed"] = seed
+    checkpoint_path, run_dir = Path(checkpoint_path), Path(run_dir)
     upstream_commit = assert_upstream_commit(config)
     seed_everything(seed)
     device = torch.device(device_name)
@@ -274,13 +300,15 @@ def evaluate_one(
         seed=seed,
     ).to(device)
     initial_encoder = encoder_trainable_state(model)
-    run_dir = run_directory(config, variant, seed)
     evaluation_metadata = collect_metadata(config, variant, seed, device)
+    evaluation_metadata["source_checkpoint"] = {
+        "path": str(checkpoint_path.resolve()), "sha256": file_sha256(checkpoint_path),
+    }
     (run_dir / "evaluation_metadata.json").write_text(
         json.dumps(evaluation_metadata, indent=2) + "\n", encoding="utf-8"
     )
     checkpoint = torch.load(
-        run_dir / PRIMARY_CHECKPOINT_NAME,
+        checkpoint_path,
         map_location="cpu",
         weights_only=False,
     )
@@ -289,7 +317,7 @@ def evaluate_one(
     )
     model.load_state_dict(checkpoint["state_dict"], strict=False)
     loaders, datasets = build_loaders(config, seed, variant)
-    rows, representation = recursive_predictions(model, loaders["test"], device)
+    rows, representation = prediction_fn(model, loaders["test"], device)
     primary_rows = [row for row in rows if row["primary_survival_window"]]
     representation["encoder_trainable_parameter_rms_delta"] = encoder_rms_delta(
         model, initial_encoder
@@ -337,7 +365,6 @@ def evaluate_one(
         },
         "primary_survival_window_rule": PRIMARY_SURVIVAL_WINDOW_RULE,
         "recursive": horizons,
-        "representation_sanity": representation,
         "error_accumulation": (
             horizons["H3"]["latent_mse"] - horizons["H1"]["latent_mse"]
         ),
@@ -350,13 +377,7 @@ def evaluate_one(
             name: loaders[name].dataset.cohort_counts()
             for name in ("train", "validation")
         }
-    if int(variant_config["ensemble_size"]) > 1:
-        metrics["uncertainty"] = uncertainty_metrics(rows)
-        metrics["member_diagnostics"] = member_diagnostics(rows)
-    (run_dir / "metrics.json").write_text(
-        json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
-    )
-    return metrics
+    return metrics, rows, representation
 
 
 def statistics(values: Sequence[float]) -> dict[str, Any]:

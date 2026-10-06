@@ -1,0 +1,253 @@
+{
+  "variant": "M2",
+  "seed": 42,
+  "replicate_id": null,
+  "training_scheme": "clarity_all_pair",
+  "optimizer_steps": 2400,
+  "warmup_steps": 240,
+  "samples_seen": 38200,
+  "effective_dataset_passes": 100.0,
+  "checkpoint_optimizer_step": 408,
+  "checkpoint_samples_seen": 6494,
+  "checkpoint_effective_dataset_passes": 17.0,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 1.768014105302947,
+    "latent": 0.1930925633226122,
+    "cox": 1.5326485633850098,
+    "bce": 0.1388192687715803,
+    "cf": 0.0,
+    "c_index": 0.375
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.15309833316132426,
+      "cosine_similarity": 0.9202371351420879,
+      "c_index": 0.5294117647058824,
+      "brier365": 0.6862656844392658
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.14168621227145195,
+      "cosine_similarity": 0.9261875785887241,
+      "c_index": 0.26666666666666666,
+      "brier365": 0.8001324968082069
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.14241443946957588,
+      "cosine_similarity": 0.9255831986665726,
+      "c_index": 0.4,
+      "brier365": 0.303559580890522
+    }
+  },
+  "error_accumulation": -0.01068389369174838,
+  "h3_h1_mse_ratio": 0.9302154800046684,
+  "all_pair_counts": {
+    "train": {
+      "pair_count": 382,
+      "unique_patient_count": 38,
+      "primary_survival_pair_count": 38
+    },
+    "validation": {
+      "pair_count": 56,
+      "unique_patient_count": 5,
+      "primary_survival_pair_count": 5
+    }
+  },
+  "study": "ensemble_reliability_size",
+  "ensemble_size": 2,
+  "origin": "new_training",
+  "source_checkpoint": "/home/tanyuejun/Clarity_dt/outputs/ensemble_reliability_size_v1/runs/M2_seed42/best_val_loss.pt",
+  "reliability": {
+    "H1": {
+      "latent_uncertainty_mean": 167.36648559570312,
+      "survival_uncertainty_mean": 0.0020325527879840877,
+      "latent_error_correlation": {
+        "pearson": -0.11414150038645186,
+        "spearman": 0.22941176470588234
+      },
+      "survival_error_correlation": {
+        "pearson": -0.13828110001315427,
+        "spearman": 0.05294117647058824
+      },
+      "risk_coverage": [
+        {
+          "coverage": 1.0,
+          "samples": 16,
+          "latent_mse": 0.15309833316132426
+        },
+        {
+          "coverage": 0.8,
+          "samples": 13,
+          "latent_mse": 0.12856949923130181
+        },
+        {
+          "coverage": 0.6,
+          "samples": 10,
+          "latent_mse": 0.133518535643816
+        },
+        {
+          "coverage": 0.4,
+          "samples": 7,
+          "latent_mse": 0.15630785056522914
+        }
+      ],
+      "members": [
+        {
+          "member_index": 0,
+          "latent_mse": 0.15805504517629743,
+          "cosine_similarity": 0.9177247397601604
+        },
+        {
+          "member_index": 1,
+          "latent_mse": 0.16176193114370108,
+          "cosine_similarity": 0.9157748222351074
+        }
+      ],
+      "member_pairs": [
+        {
+          "member_i": 0,
+          "member_j": 1,
+          "prediction_pearson": 0.9849150922869976
+        }
+      ],
+      "averaging_gain_mse": 0.006810154998674989
+    },
+    "H2": {
+      "latent_uncertainty_mean": 263.1969699859619,
+      "survival_uncertainty_mean": 0.003537262214837966,
+      "latent_error_correlation": {
+        "pearson": 0.3349041153401484,
+        "spearman": 0.2676470588235294
+      },
+      "survival_error_correlation": {
+        "pearson": 0.023381073162469054,
+        "spearman": -0.011764705882352941
+      },
+      "risk_coverage": [
+        {
+          "coverage": 1.0,
+          "samples": 16,
+          "latent_mse": 0.14168621227145195
+        },
+        {
+          "coverage": 0.8,
+          "samples": 13,
+          "latent_mse": 0.1173131328362685
+        },
+        {
+          "coverage": 0.6,
+          "samples": 10,
+          "latent_mse": 0.11382272392511368
+        },
+        {
+          "coverage": 0.4,
+          "samples": 7,
+          "latent_mse": 0.12015731632709503
+        }
+      ],
+      "members": [
+        {
+          "member_index": 0,
+          "latent_mse": 0.1533540291711688,
+          "cosine_similarity": 0.9202587828040123
+        },
+        {
+          "member_index": 1,
+          "latent_mse": 0.15143741434440017,
+          "cosine_similarity": 0.921228963881731
+        }
+      ],
+      "member_pairs": [
+        {
+          "member_i": 0,
+          "member_j": 1,
+          "prediction_pearson": 0.9763688532722141
+        }
+      ],
+      "averaging_gain_mse": 0.010709509486332536
+    },
+    "H3": {
+      "latent_uncertainty_mean": 714.1333627700806,
+      "survival_uncertainty_mean": 0.01013366852706099,
+      "latent_error_correlation": {
+        "pearson": 0.6413085555183472,
+        "spearman": 0.3029411764705882
+      },
+      "survival_error_correlation": {
+        "pearson": 0.47159282232217103,
+        "spearman": 0.22941176470588234
+      },
+      "risk_coverage": [
+        {
+          "coverage": 1.0,
+          "samples": 16,
+          "latent_mse": 0.14241443946957588
+        },
+        {
+          "coverage": 0.8,
+          "samples": 13,
+          "latent_mse": 0.11996703996108128
+        },
+        {
+          "coverage": 0.6,
+          "samples": 10,
+          "latent_mse": 0.12250890210270882
+        },
+        {
+          "coverage": 0.4,
+          "samples": 7,
+          "latent_mse": 0.12849905341863632
+        }
+      ],
+      "members": [
+        {
+          "member_index": 0,
+          "latent_mse": 0.20395015319809318,
+          "cosine_similarity": 0.8953634835779667
+        },
+        {
+          "member_index": 1,
+          "latent_mse": 0.13899505930021405,
+          "cosine_similarity": 0.9277689717710018
+        }
+      ],
+      "member_pairs": [
+        {
+          "member_i": 0,
+          "member_j": 1,
+          "prediction_pearson": 0.9365396208443811
+        }
+      ],
+      "averaging_gain_mse": 0.029058166779577732
+    }
+  }
+}

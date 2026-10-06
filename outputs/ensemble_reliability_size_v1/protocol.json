@@ -1,0 +1,29 @@
+{
+  "study": "ensemble_reliability_size",
+  "started_at_utc": "2026-10-05T16:13:10.089796+00:00",
+  "config": "/home/tanyuejun/Clarity_dt/configs/ensemble_reliability_size_v1.yaml",
+  "coordinator_pid": 1366814,
+  "gpu": "2",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "reference_models": {
+    "M1": "A",
+    "M3": "C"
+  },
+  "new_training_sizes": [
+    2,
+    5
+  ],
+  "uncertainty": "Uz=mean_member squared L2 deviation; Us=population variance of sigmoid probability",
+  "coverage": [
+    1.0,
+    0.8,
+    0.6,
+    0.4
+  ],
+  "scheduling": "Independent workers; finalizer waits for all runs before generating Step 2",
+  "finalizer_pid": 3266472
+}
