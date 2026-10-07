@@ -1,0 +1,4 @@
+model_config: configs/pure_rrt_v3.yaml
+checkpoint_root: outputs/pure_rrt_v3_step2400/primary
+output_root: outputs/outcome_transfer_ac_v1
+seeds: [42, 43, 44]

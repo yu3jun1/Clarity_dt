@@ -1,0 +1,320 @@
+{
+  "variant": "A",
+  "seed": 43,
+  "replicate_id": null,
+  "training_scheme": "clarity_all_pair",
+  "optimizer_steps": 2400,
+  "warmup_steps": 240,
+  "samples_seen": 38200,
+  "effective_dataset_passes": 100.0,
+  "checkpoint_optimizer_step": 312,
+  "checkpoint_samples_seen": 4966,
+  "checkpoint_effective_dataset_passes": 13.0,
+  "checkpoint_file": "best_val_loss.pt",
+  "checkpoint_selection_criterion": "validation_total_loss",
+  "checkpoint_validation_metrics": {
+    "loss": 2.065333509019443,
+    "latent": 0.1655460000038147,
+    "cox": 1.6613688128335136,
+    "bce": 0.32119169405528475,
+    "cf": 0.0,
+    "c_index": 0.75
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "cohort_counts": {
+    "train": {
+      "trajectory_count": 74,
+      "unique_patient_count": 38,
+      "primary_survival_window_count": 38
+    },
+    "validation": {
+      "trajectory_count": 11,
+      "unique_patient_count": 5,
+      "primary_survival_window_count": 5
+    },
+    "test": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8
+    }
+  },
+  "primary_survival_window_rule": "earliest_eligible_four_stage_window_per_patient",
+  "recursive": {
+    "H1": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1468542362563312,
+      "cosine_similarity": 0.9236585050821304,
+      "c_index": 0.4117647058823529,
+      "brier365": 0.5822410819727292
+    },
+    "H2": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.13119755126535892,
+      "cosine_similarity": 0.9318962283432484,
+      "c_index": 0.2,
+      "brier365": 0.5625244834265352
+    },
+    "H3": {
+      "trajectory_count": 16,
+      "unique_patient_count": 8,
+      "primary_survival_window_count": 8,
+      "latent_mse": 0.1222924655303359,
+      "cosine_similarity": 0.9366722851991653,
+      "c_index": 0.4,
+      "brier365": 0.23375588102170797
+    }
+  },
+  "error_accumulation": -0.024561770725995302,
+  "h3_h1_mse_ratio": 0.8327472781709667,
+  "all_pair_counts": {
+    "train": {
+      "pair_count": 382,
+      "unique_patient_count": 38,
+      "primary_survival_pair_count": 38
+    },
+    "validation": {
+      "pair_count": 56,
+      "unique_patient_count": 5,
+      "primary_survival_pair_count": 5
+    }
+  },
+  "outcome_transfer": {
+    "survival_time_origin": "H3 endpoint; 365 days after that endpoint",
+    "patient_count": 8,
+    "known365_count": 6,
+    "censored_by365_count": 2,
+    "H3": {
+      "predicted_latent": {
+        "c_index": 0.4,
+        "brier365": 0.23375588102170797,
+        "known365_mse": 0.15160637991507805
+      },
+      "true_latent": {
+        "c_index": 0.26666666666666666,
+        "brier365": 0.23341068367475593,
+        "known365_mse": 0.15150880987556103
+      },
+      "mean_predicted_latent": {
+        "c_index": 0.4,
+        "brier365": 0.23375588102170797,
+        "known365_mse": 0.15160637991507805
+      }
+    },
+    "predicted_minus_true": {
+      "c_index": 0.13333333333333336,
+      "brier365": 0.00034519734695204196
+    },
+    "disagreement_vs_survival_error": {
+      "latent_disagreement": {
+        "n": 6,
+        "pearson": null,
+        "spearman": null
+      },
+      "survival_disagreement": {
+        "n": 6,
+        "pearson": null,
+        "spearman": null
+      }
+    },
+    "patients": [
+      {
+        "patient": "PatientID_0014",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 295.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 0.0,
+        "predicted_survival365": 0.289460152387619,
+        "true_survival365": 0.29060107469558716,
+        "mean_latent_survival365": 0.289460152387619,
+        "transfer_abs_probability_error": 0.0011409223079681396,
+        "primary_H3_latent_mse": 0.09082424640655518,
+        "H1_latent_mse": 0.08734422673781712,
+        "H2_latent_mse": 0.08147756258646648,
+        "H3_latent_mse": 0.09698693454265594,
+        "predicted_latent_squared_error365": 0.08378717982026362,
+        "predicted_latent_brier_contribution": 0.18009324861400564,
+        "true_latent_squared_error365": 0.08444898461423023,
+        "true_latent_brier_contribution": 0.18151574040271892
+      },
+      {
+        "patient": "PatientID_0021",
+        "start": "TP2",
+        "end": "TP5",
+        "window_end": "TP5",
+        "survival_time": 126.0,
+        "event": 0,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": false,
+        "label365": null,
+        "predicted_survival365": 0.263063907623291,
+        "true_survival365": 0.2676240801811218,
+        "mean_latent_survival365": 0.263063907623291,
+        "transfer_abs_probability_error": 0.0045601725578308105,
+        "primary_H3_latent_mse": 0.10364501178264618,
+        "H1_latent_mse": 0.09152539819478989,
+        "H2_latent_mse": 0.10237699747085571,
+        "H3_latent_mse": 0.10364501178264618,
+        "predicted_latent_squared_error365": null,
+        "predicted_latent_brier_contribution": 0.0,
+        "true_latent_squared_error365": null,
+        "true_latent_brier_contribution": 0.0
+      },
+      {
+        "patient": "PatientID_0053",
+        "start": "TP1",
+        "end": "TP5",
+        "window_end": "TP5",
+        "survival_time": 91.0,
+        "event": 0,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": false,
+        "label365": null,
+        "predicted_survival365": 0.28981804847717285,
+        "true_survival365": 0.28060728311538696,
+        "mean_latent_survival365": 0.28981804847717285,
+        "transfer_abs_probability_error": 0.009210765361785889,
+        "primary_H3_latent_mse": 0.26455748081207275,
+        "H1_latent_mse": 0.2837882936000824,
+        "H2_latent_mse": 0.2587374448776245,
+        "H3_latent_mse": 0.26455748081207275,
+        "predicted_latent_squared_error365": null,
+        "predicted_latent_brier_contribution": 0.0,
+        "true_latent_squared_error365": null,
+        "true_latent_brier_contribution": 0.0
+      },
+      {
+        "patient": "PatientID_0065",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 128.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 0.0,
+        "predicted_survival365": 0.2657584846019745,
+        "true_survival365": 0.2677980959415436,
+        "mean_latent_survival365": 0.2657584846019745,
+        "transfer_abs_probability_error": 0.002039611339569092,
+        "primary_H3_latent_mse": 0.07272590696811676,
+        "H1_latent_mse": 0.0728670135140419,
+        "H2_latent_mse": 0.07385051995515823,
+        "H3_latent_mse": 0.07829470187425613,
+        "predicted_latent_squared_error365": 0.07062757213793791,
+        "predicted_latent_brier_contribution": 0.08556489773952478,
+        "true_latent_squared_error365": 0.07171582018991618,
+        "true_latent_brier_contribution": 0.0868833040001973
+      },
+      {
+        "patient": "PatientID_0074",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 344.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 0.0,
+        "predicted_survival365": 0.26544445753097534,
+        "true_survival365": 0.2686476707458496,
+        "mean_latent_survival365": 0.26544445753097534,
+        "transfer_abs_probability_error": 0.0032032132148742676,
+        "primary_H3_latent_mse": 0.10478433221578598,
+        "H1_latent_mse": 0.10200127214193344,
+        "H2_latent_mse": 0.10655309508244197,
+        "H3_latent_mse": 0.10549710939327876,
+        "predicted_latent_squared_error365": 0.07046076003391377,
+        "predicted_latent_brier_contribution": 0.1514492694650944,
+        "true_latent_squared_error365": 0.07217157099717042,
+        "true_latent_brier_contribution": 0.15512650868949937
+      },
+      {
+        "patient": "PatientID_0083",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 398.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 1.0,
+        "predicted_survival365": 0.2636224031448364,
+        "true_survival365": 0.2676143944263458,
+        "mean_latent_survival365": 0.2636224031448364,
+        "transfer_abs_probability_error": 0.003991991281509399,
+        "primary_H3_latent_mse": 0.121797114610672,
+        "H1_latent_mse": 0.3317674895127614,
+        "H2_latent_mse": 0.255558376510938,
+        "H3_latent_mse": 0.18815860648949942,
+        "predicted_latent_squared_error365": 0.5422519651501858,
+        "predicted_latent_brier_contribution": 1.1655233912958103,
+        "true_latent_squared_error365": 0.5363886752514881,
+        "true_latent_brier_contribution": 1.1529207601094247
+      },
+      {
+        "patient": "PatientID_0095",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 284.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 0.0,
+        "predicted_survival365": 0.26521414518356323,
+        "true_survival365": 0.26857900619506836,
+        "mean_latent_survival365": 0.26521414518356323,
+        "transfer_abs_probability_error": 0.003364861011505127,
+        "primary_H3_latent_mse": 0.08460173010826111,
+        "H1_latent_mse": 0.08807038888335228,
+        "H2_latent_mse": 0.08268015831708908,
+        "H3_latent_mse": 0.08442507311701775,
+        "predicted_latent_squared_error365": 0.07033854280544816,
+        "predicted_latent_brier_contribution": 0.13228825240101655,
+        "true_latent_squared_error365": 0.07213468256873057,
+        "true_latent_brier_contribution": 0.1356663176960258
+      },
+      {
+        "patient": "PatientID_0254",
+        "start": "TP1",
+        "end": "TP4",
+        "window_end": "TP4",
+        "survival_time": 364.0,
+        "event": 1,
+        "latent_disagreement": 0.0,
+        "survival_disagreement": 0.0,
+        "known365": true,
+        "label365": 0.0,
+        "predicted_survival365": 0.2686489522457123,
+        "true_survival365": 0.26868778467178345,
+        "mean_latent_survival365": 0.2686489522457123,
+        "transfer_abs_probability_error": 3.883242607116699e-05,
+        "primary_H3_latent_mse": 0.09110945463180542,
+        "H1_latent_mse": 0.08914031833410263,
+        "H2_latent_mse": 0.09421791881322861,
+        "H3_latent_mse": 0.09110945463180542,
+        "predicted_latent_squared_error365": 0.072172259542719,
+        "predicted_latent_brier_contribution": 0.1551279886582121,
+        "true_latent_squared_error365": 0.07219312563183067,
+        "true_latent_brier_contribution": 0.15517283850018138
+      }
+    ]
+  },
+  "study": "outcome_transfer_ac_v1",
+  "source_checkpoint": "/home/tanyuejun/Clarity_dt/outputs/pure_rrt_v3_step2400/primary/A_seed43/best_val_loss.pt"
+}

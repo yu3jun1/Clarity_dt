@@ -1,0 +1,95 @@
+{
+  "created_at_utc": "2026-10-07T08:23:58.444635+00:00",
+  "variant": "C",
+  "seed": 44,
+  "replicate_id": null,
+  "behavioral_baseline_commit": "9871306",
+  "python": "3.10.20",
+  "platform": "Linux-6.8.0-71-generic-x86_64-with-glibc2.39",
+  "packages": {
+    "torch": "2.7.1+cu128",
+    "transformers": "5.15.1",
+    "peft": "0.20.0",
+    "numpy": "2.2.6",
+    "bitsandbytes": "0.50.1"
+  },
+  "pytorch_version": "2.7.1+cu128",
+  "cuda_version": "12.8",
+  "cudnn_version": 90701,
+  "gpu": {
+    "logical_index": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "uuid": "8f47a84b-8955-0b18-5607-cefbfdc21a3f",
+    "compute_capability": [
+      12,
+      0
+    ],
+    "total_memory_bytes": 101974081536
+  },
+  "nvidia_smi_inventory": [
+    "0, GPU-8b31b6ad-e100-275f-8313-dc07b2f2635a, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "1, GPU-89a74482-f4e5-710d-b134-cc20a8f53e56, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "2, GPU-8f47a84b-8955-0b18-5607-cefbfdc21a3f, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "3, GPU-cda23bfb-fa77-0745-91fb-9d8414cc65bc, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "4, GPU-2eec25bb-5b79-d1e1-beab-f53dd7ca841c, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "5, GPU-ec8b022d-47b6-1715-42cb-5ddd6dc54154, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "6, GPU-c200f301-fb51-34c4-f089-f65323a632af, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05",
+    "7, GPU-fb5a3739-6092-c4b3-da34-d012d97dbd96, NVIDIA RTX PRO 6000 Blackwell Server Edition, 580.95.05"
+  ],
+  "cuda_visible_devices": "2",
+  "environment": {
+    "PYTHONHASHSEED": null,
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+    "OMP_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null
+  },
+  "determinism": {
+    "algorithms_enabled": false,
+    "warn_only": false,
+    "cudnn_deterministic": false,
+    "cudnn_benchmark": false,
+    "matmul_tf32": false,
+    "cudnn_tf32": true,
+    "flash_sdp": true,
+    "memory_efficient_sdp": true,
+    "cudnn_sdp": true,
+    "math_sdp": true
+  },
+  "dataloader": {
+    "num_workers": 2,
+    "batch_size": 16,
+    "worker_init_fn": null,
+    "independent_validation_generator": false,
+    "shuffle_seed": 44,
+    "drop_last": false,
+    "persistent_workers": false
+  },
+  "git_commit": "ae1948c3dc3edfaef63b2e20ebe226938defadbb",
+  "tracked_source_dirty": false,
+  "source_sha256": "884200cb0a8772dd3ab0fd568d25026209ad4b88f6df36bff78c77fbcabcd93e",
+  "data_fingerprints": {
+    "timeline_json": {
+      "path": "/data/tanyuejun/CLARITY/clinical/MU_Glioma_Post/clinical_latest.json",
+      "sha256": "c993e04cde0e8b06bcc6ec279443516c4bbb05961bd19efd2dc04e9f016d6754"
+    },
+    "split_file": {
+      "path": "data/splits.json",
+      "sha256": "ac0f0d67e89f0fe417bc37e2d9e545a012225fa3ff51aaea10a4edc60a2e5c56"
+    },
+    "mri_cache_manifest": {
+      "path": "/dev/shm/clarity_mri_cache/manifest.json",
+      "sha256": "f2312b99d1f1a0d536725c352b0ef3af60115f65c4c774a6857fb338da605890"
+    }
+  },
+  "upstream_commit": "dadb82241a24f5ec5e4e4dc994e3116fd4a9da04",
+  "config_sha256": "a0954682e7bfc71fe181f52f9e95c7fa3c5d16174558d62ef356c2285cdc5bde",
+  "pretrained_paths": {
+    "brainiac_ckpt": "/home/tanyuejun/CLARITY/BrainIAC-main/src/checkpoints/BrainIAC.ckpt",
+    "text_encoder_name": "/data/tanyuejun/model/medgemma-4b-it"
+  },
+  "checkpoint_selection": "minimum validation_total_loss strictly after warmup; earliest tie",
+  "source_checkpoint": {
+    "path": "/home/tanyuejun/Clarity_dt/outputs/pure_rrt_v3_step2400/primary/C_seed44/best_val_loss.pt",
+    "sha256": "4c5faf1d9e6f24dcda3a807af2b799cfcc9718b70d932ed3975a06f58bbc39c6"
+  }
+}

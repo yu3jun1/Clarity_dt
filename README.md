@@ -4,6 +4,9 @@
 使用独立 `clarity_ensemble_study` 入口及 `outputs/ensemble_reliability_size_v1/`；
 读取旧 A/C checkpoint 重评估，再训练 M2/M5，不与 A–F 输出混用。
 
+后续研究：[A/C End-to-End Outcome Transfer v1](docs/outcome_transfer_ac_v1.md)，
+冻结 A/C checkpoint，对比真实与预测 latent 的 H3 生存结果，输出患者配对误差和 disagreement–survival error 分析。
+
 当前训练采用普通 seeded training，数值执行行为回到历史 step2400 实验对应的
 `9871306` 基线；没有默认/显式 strict 两套模式，也不再提供严格确定性训练入口。
 保留实验设计、训练预算、共享缓存和来源记录，不承诺同 seed 重跑逐位一致。

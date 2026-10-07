@@ -1,0 +1,29 @@
+{
+  "model_config": "configs/pure_rrt_v3.yaml",
+  "checkpoint_root": "outputs/pure_rrt_v3_step2400/primary",
+  "output_root": "outputs/outcome_transfer_ac_v1",
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "started_at_utc": "2026-10-07T08:22:37.778228+00:00",
+  "coordinator_pid": 3081314,
+  "gpus": [
+    "0",
+    "1",
+    "2"
+  ],
+  "study_config_sha256": "90a0a0794e1a5fd73f671057a3bc264e91aae5b81aecbc2eb5b577ef656a238d",
+  "model_config_sha256": "f90dd55dfb8bdd885a43f7c69d8b57cdebb9d153b8666928cd157bfe1b184bb5",
+  "source_sha256": "884200cb0a8772dd3ab0fd568d25026209ad4b88f6df36bff78c77fbcabcd93e",
+  "checkpoint": "best_val_loss.pt",
+  "training": "none; frozen existing A/C checkpoints",
+  "true_latent": "Observed endpoint MRI encoded by each checkpoint's own encoder and evaluated by its own head",
+  "predicted_latent": "Independent recursive member trajectories; average member risks and sigmoid probabilities",
+  "mean_predicted_latent": "Auxiliary head(mean member latent) fusion control",
+  "survival_unit": "Earliest eligible four-stage window per patient; H3 endpoint-relative 365 days",
+  "censoring_reference": "Training patients, primary H3 window only",
+  "paired_error": "C minus A; latent errors averaged within patient/horizon; H3 survival uses primary window",
+  "uncertainty_error": "H3 squared survival-probability error among patients with known 365-day status"
+}

@@ -11,6 +11,7 @@
 |[仓库 README](../README.md)|A–F 定义、普通训练命令、共享缓存、metadata 和结果管理|
 |[F 实验方案](teacher_forced_stagewise_ensemble_F_plan.md)|Teacher-forced Stage-wise + 3-member dynamics ensemble；普通训练与独立 campaign|
 |[Ensemble 可靠性与成员数 v1](ensemble_reliability_size_v1.md)|独立 M1/M2/M3/M5 all-pair 实验；A/C 重评估、M2/M5 新训练与自动报告|
+|[A/C Outcome Transfer v1](outcome_transfer_ac_v1.md)|冻结 A/C，比较 true/predicted latent 的 H3 生存结果及患者配对误差|
 |[UCSF 数据集说明](UCSF_POSTOP_GLIOMA_DATASET.md)|本地数据内容、目录、字段和使用限制；不是当前 A–F 消融的数据切换|
 
 ## 历史协议与目录整理记录
